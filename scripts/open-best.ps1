@@ -1,9 +1,11 @@
 # Opens the best scored Speed Bounty session in the patched OpenClaw web chat, ready to screen-record.
 # Run: powershell -ExecutionPolicy Bypass -File scripts\open-best.ps1 [-SessionKey agent:santa:bench-...]
 # The gateway token comes from your user env var and is never printed.
-param([string]$SessionKey)
+param([string]$SessionKey, [string]$SinceTime)
+# -SinceTime 2026-11-22T07:00+08:00 picks the best run made after the switch to the official model config
+$Since = if ($SinceTime) { @('--since', $SinceTime) } else { @() }
 if (-not $SessionKey) {
-  $line = node (Join-Path $PSScriptRoot 'best-speed.mjs') --top 1 | Select-String 'best session to open in the web chat: (.+)$'
+  $line = node (Join-Path $PSScriptRoot 'best-speed.mjs') --top 1 @Since | Select-String 'best session to open in the web chat: (.+)$'
   if (-not $line) { Write-Error 'No valid runs in logs\speed-*.json yet.'; exit 1 }
   $SessionKey = $line.Matches[0].Groups[1].Value.Trim()
 }
