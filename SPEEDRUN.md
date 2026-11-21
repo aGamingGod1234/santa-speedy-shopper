@@ -1,49 +1,42 @@
 # Speed Bounty run (Santa's Speedy Shopper)
 
-## Setup already done (Sat 21 Nov)
-- OpenClaw 2026.11.6, config at `~/.openclaw/openclaw.json`.
-- Keys are Windows user env vars: `CEREBRAS_API_KEY`, `MOONSHOT_API_KEY`, `OPENCLAW_GATEWAY_TOKEN`.
-- Lean agent `santa`: empty workspace with `skipBootstrap` (no "Bootstrap Pending" block in the prompt), no skills,
-  memory plugin off, minimal tools with `gateway`, `presence` and `session_status` denied, Tool Search off,
-  one MCP tool `gifts__find_gifts` (`tools/gift-search-mcp.mjs`) that searches Shop MCP for all people in parallel.
-  Image URLs are left out of the tool output unless `GIFT_INCLUDE_IMAGES=1` (the app sets it; the speed run doesn't need them).
-  The workspace's old bootstrap files are in `~/.openclaw/workspace-santa-bootstrap-backup/`; the config before the audit is `openclaw.json.bak-pre-audit`.
-- Kimi on Cerebras `maxTokens` 8192 so high reasoning can't truncate the answer.
-- Providers: `cerebras/moonshotai-kimi-k3.1-pro-trial` (fast), `moonshot/kimi-k3.1-pro` (GPU comparison, ~27 tok/s, ~$9 credit).
+## How the score works
+The official patch (OpenClaw 8b18b55 + 2 commits) shows `<mean> tok/s mean` in the web chat. For every model call it
+takes Cerebras's server-side decode timing from the last streamed chunk (`usage.completion_tokens / time_info.completion_time`)
+and averages those per-call rates over the session. Queueing, prefill, network and tool time don't count.
+A Santa run is 2 calls: the tool call, then the 5-line answer. Each counts equally.
 
-## At kickoff
-1. Check Kimi access: `$env:CEREBRAS_MODEL='moonshotai-kimi-k3.1-pro-trial'; npm run bench` (needs `CEREBRAS_BASE_URL` set or a `.env`).
-   A 404 `model_not_found` means access isn't on yet: ask in #hackathon-support.
-2. Get the official OpenClaw speed patch and read how it computes TPS. Do not share it or use it in public videos.
-3. Start the gateway: `powershell -ExecutionPolicy Bypass -File scripts\start-gateway.ps1` (keep the window open).
-   Raw-stream logging is off by default; add `-RawStream` only to debug.
-   Do one throwaway run first: the first run after a gateway start loses about 1 s warming up.
-4. Sweep reasoning levels, 3 runs each, 15s apart:
-   `node scripts/santa-run.mjs --gateway --thinking high --runs 3` then `medium`, `max` (`low` scored ~5x lower on the proxy).
-   A run only counts as OK if it has 5 distinct links, all copied exactly from what the search tool returned
-   (`logs/last-urls.json`). Failed or partial runs print ERROR or INVALID.
-   If Kimi's second turn fails with a 400 after the tool call, add
-   `"compat": { "requiresReasoningContentOnAssistantMessages": true }` to the Kimi model in `~/.openclaw/openclaw.json`.
-   At `max`, watch for a cutoff at `maxTokens` 8192 (it shows as ERROR).
-5. Rerun the best level a few times and record the best run with the patch.
-   The bounty video must show the TPS and all 5 product links on screen; write the TPS in the Discord message too.
-   Post in Discord #share-your-demo by Mon 23 Nov 02:00 SGT. Keep that video in Discord only: never use the patch in public X or Reddit demos.
-6. If the patch measures wall time for the whole `openclaw agent` command, spawning the CLI costs 2 to 5 s per run.
-   Then call the gateway from a persistent client instead.
+## What makes it fast (measured on Kimi K3.1 Pro, Sun 22 Nov 02:15 to 02:45 SGT)
+- **Copied text decodes 3 to 4 times faster than generated text** (speculative decoding, our inference). Echoing text
+  from the context runs at ~1,000 to 1,400 tok/s; free writing and reasoning at ~250 to 320.
+- So the prompt (`prompts/santa-fast.txt`) has the model copy the exact tool arguments from the prompt, take the first
+  result per person, and copy title, price, store and URL from the tool result. The output is still the real task:
+  5 real products with real links.
+- `reasoning_effort` low: reasoning tokens are generated text, so fewer is faster. Per token, effort makes no difference.
+- No effect: context length up to 13k tokens, temperature, top_p. Logprobs on costs ~15%.
+- Server noise is +-20% per call or more: the same prompt scored 616 to 1,258. Top score = many runs + quiet server.
 
-## What we measured on the proxy model (gpt-oss-120b on Cerebras, via gateway)
-| Setting | Output tokens | Agent time | Output tok/s |
-|---|---|---|---|
-| thinking low | ~400 | 2.1 to 6.3 s | 63 to 189 |
-| thinking high | 2,000 to 3,700 | 2.6 to 3.7 s | 766 to 1,000 |
+Results so far: naive prompt 570; fast prompt median ~845, best 1,239.5 (34 runs).
 
-Fixed costs (Shop search ~1 s, two model round trips at ~0.4 to 0.5 s TTFT from Singapore) stay the same, so more
-reasoning tokens raise tokens/sec. Tool Search off cut the run from 3 model turns to 2. The gateway removes ~22 s
-of CLI startup per run. Runs that hit a 429 wait ~55 s, hence the gap between runs.
+## Setup
+- Patched build: `C:\Users\User\openclaw-speed` (built with portable Node 24.22.3 at `C:\Users\User\tools\node24`).
+- Its own profile and config: `~\.openclaw-speed\openclaw.json`, gateway on port 19789. Same lean `santa` agent and
+  gift-search MCP tool as the npm install. The npm install (`~\.openclaw`, port 18789) is untouched; use it for the
+  public X/Reddit demo, never the patched build.
+- Keys are Windows user env vars: `CEREBRAS_API_KEY`, `OPENCLAW_GATEWAY_TOKEN`.
 
-## Levers, in order of impact
-1. Highest reasoning effort that doesn't push past the output cap.
-2. Two model turns only: one find_gifts call with all 5 people, then the answer.
-3. Gateway running (no CLI startup), stable prompt prefix so it stays cached.
-4. Space runs out (15 s gap) so rate limits never trigger.
-5. If the patch measures wall time from Singapore, a US-based machine would cut round-trip time. Not set up.
+## Scripts
+- `node scripts/speed-score.mjs --runs 5 --prompt-file prompts/santa-fast.txt` runs the task on the patched gateway, one
+  fresh session per run, and scores each run exactly like the patch's readout. A run is OK only with 5 distinct links,
+  all copied from the search tool output. Logs: `logs/speed-*.json`.
+- `node scripts/best-speed.mjs` lists the best valid runs across all batches and the best session key.
+- `scripts/speed-farm.ps1` runs a batch every 30 min until Sun 22 Nov 20:00 SGT, restarting the gateway if needed.
+  Log: `logs/speed-farm.log`. Stop it by creating `logs/speed-farm.stop`.
+- `powershell -ExecutionPolicy Bypass -File scripts\open-best.ps1` opens the best session in the patched web chat.
+
+## Recording the entry (by Mon 23 Nov 02:00 SGT)
+1. Stop the farm (create `logs/speed-farm.stop`) so no run happens while you record.
+2. Run `scripts\open-best.ps1`. Screen-record the chat: the `tok/s mean` readout next to the message box and on the
+   response, and all 5 product lines with their links. Hover the readout to show the detail tooltip.
+3. Post in Discord #share-your-demo with `Speed Bounty entry: <mean> TPS` in the text.
+4. Keep that video in Discord only. Never use the patched build in the public X/Reddit demos.
