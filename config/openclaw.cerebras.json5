@@ -1,0 +1,69 @@
+// OpenClaw config snippet: Kimi K3.1 Pro on Cerebras as a custom OpenAI-compatible provider.
+// Merge into ~/.openclaw/openclaw.json (or point OpenClaw at it). Keys come from env vars only.
+//
+// Sources:
+//   https://docs.openclaw.ai/concepts/model-providers/custom-providers.md
+//   https://docs.openclaw.ai/tools/thinking.md
+//   https://docs.openclaw.ai/gateway/config-tools/tool-policy.md
+//   https://inference-docs.cerebras.ai/capabilities/reasoning.md
+//   https://inference-docs.cerebras.ai/support/rate-limits
+//
+// Why a custom provider and not the @openclaw/cerebras-provider plugin: the plugin discovers models
+// from Cerebras's public listing, and Kimi on Cerebras is a Dedicated endpoint, so the trial ID is
+// probably not listed. UNVERIFIED: check with `openclaw models list` once the key arrives.
+{
+  agents: {
+    defaults: {
+      model: { primary: "cerebras-kimi/moonshotai-kimi-k3.1-pro-trial" },
+
+      // Maps to reasoning_effort. Cerebras Kimi K3.1 Pro accepts low | medium | high | max (default max);
+      // "none" is rejected. Tune with scripts/tps-bench.mjs before the timed run.
+      thinkingDefault: "low",
+
+      // Example values from https://docs.openclaw.ai/concepts/parallel-specialist-lanes.md,
+      // not confirmed defaults. UNVERIFIED.
+      maxConcurrent: 4,
+      subagents: { maxConcurrent: 5 },
+    },
+  },
+
+  models: {
+    mode: "merge",
+    providers: {
+      "cerebras-kimi": {
+        baseUrl: "https://api.cerebras.ai/v1",
+        apiKey: "${CEREBRAS_API_KEY}",
+        api: "openai-completions",
+        models: [
+          {
+            id: "moonshotai-kimi-k3.1-pro-trial",
+            name: "Kimi K3.1 Pro (Cerebras trial)",
+            reasoning: true,
+            input: ["text"],
+            // Cerebras pre-checks prompt + max_completion_tokens against TPM before running a request.
+            // OpenClaw's default (32768) would reserve a third of a 100K TPM budget per call.
+            maxTokens: 4096,
+            // contextWindow: UNVERIFIED for the trial endpoint; left unset (OpenClaw budgets with 200000).
+            compat: {
+              supportedReasoningEfforts: ["low", "medium", "high", "max"],
+              // Cerebras wants the full assistant message (reasoning + tool calls) replayed each turn.
+              // UNVERIFIED which field Cerebras accepts. If multi-turn tool calls fail, try:
+              // requiresReasoningContentOnAssistantMessages: true,
+            },
+          },
+        ],
+      },
+    },
+  },
+
+  // Minimal profile = session_status + gateway only. Add the shop tool during the hackathon.
+  // allow and alsoAllow cannot both be set in the same scope.
+  tools: {
+    profile: "minimal",
+    // alsoAllow: ["group:sessions"],
+  },
+
+  // Gateway OpenAI-compatible endpoint (off by default). Uncomment if the web app calls OpenClaw over HTTP.
+  // https://docs.openclaw.ai/gateway/openai-http-api.md
+  // gateway: { http: { endpoints: { chatCompletions: { enabled: true } } } },
+}

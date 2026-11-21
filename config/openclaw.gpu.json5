@@ -1,0 +1,65 @@
+// OpenClaw config snippet: the same Kimi K3.1 Pro model on a GPU provider, for the comparison clip.
+// Keep everything except the provider block identical to openclaw.cerebras.json5 so the runs are fair.
+// Keys come from env vars only.
+//
+// Sources:
+//   https://docs.openclaw.ai/concepts/model-providers/custom-providers.md
+//   https://platform.kimi.com/docs/guide/use-reasoning-effort.md
+//   https://openrouter.ai/docs/guides/routing/provider-selection
+//
+// Default below: Moonshot first-party (the model's maker). Alternative: OpenRouter pinned to one GPU host.
+{
+  agents: {
+    defaults: {
+      model: { primary: "gpu-kimi/kimi-k3.1-pro" },
+      // Moonshot accepts low | high | max only (no medium). Use the same level on both providers.
+      thinkingDefault: "low",
+      maxConcurrent: 4,             // UNVERIFIED default; mirrors the Cerebras snippet
+      subagents: { maxConcurrent: 5 },
+    },
+  },
+
+  models: {
+    mode: "merge",
+    providers: {
+      "gpu-kimi": {
+        // Keep in sync with GPU_PROVIDER_BASE_URL in .env. Literal here because env substitution
+        // in baseUrl is UNVERIFIED (the docs only show it for apiKey).
+        baseUrl: "https://api.moonshot.ai/v1",
+        apiKey: "${GPU_PROVIDER_API_KEY}",
+        api: "openai-completions",
+        timeoutSeconds: 300,        // GPU hosts take far longer per turn
+        models: [
+          {
+            id: "kimi-k3.1-pro",
+            name: "Kimi K3.1 Pro (GPU baseline)",
+            reasoning: true,
+            input: ["text"],
+            maxTokens: 4096,
+            compat: {
+              supportedReasoningEfforts: ["low", "high", "max"],
+              // Moonshot wants reasoning_content replayed on assistant messages. UNVERIFIED in OpenClaw.
+              // requiresReasoningContentOnAssistantMessages: true,
+            },
+          },
+        ],
+      },
+
+      // OpenRouter alternative (pin one GPU host, no fallbacks). UNVERIFIED that OpenClaw passes
+      // params.extra_body through to OpenRouter unchanged; the docs say it merges into the JSON body.
+      // "gpu-openrouter": {
+      //   baseUrl: "https://openrouter.ai/api/v1",
+      //   apiKey: "${GPU_PROVIDER_API_KEY}",
+      //   api: "openai-completions",
+      //   models: [{ id: "moonshotai/kimi-k3.1-pro", reasoning: true, maxTokens: 4096 }],
+      // },
+    },
+  },
+
+  // agents.defaults.models["gpu-openrouter/moonshotai/kimi-k3.1-pro"] =
+  //   { params: { extra_body: { provider: { order: ["baseten"], allow_fallbacks: false } } } }
+
+  tools: {
+    profile: "minimal",
+  },
+}

@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wrapped Split UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ Page shell (outside the 1080x960 frame) ============ */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #1b1d22; color: #eceef2; font: 14px/1.3 system-ui, sans-serif; overflow: hidden; }
+body.record { background: #000; }
+.toolbar {
+  position: fixed; inset: 0 0 auto 0; z-index: 10;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 10px 16px; background: #25282f; border-bottom: 1px solid #343843;
+}
+body.record .toolbar { inset: auto 0 0 0; border-bottom: 0; border-top: 1px solid #343843; }
+body.clean .toolbar { display: none; }
+.toolbar .group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.toolbar .label { color: #9aa0ab; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-right: 4px; }
+.toolbar button { font: inherit; color: #eceef2; background: #31353f; border: 1px solid #3d424e; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.toolbar button:hover { background: #3a3f4b; }
+.toolbar button[aria-pressed="true"] { background: #ffd36b; color: #1b1d22; border-color: #ffd36b; font-weight: 600; }
+.toolbar kbd { font: 11px ui-monospace, monospace; opacity: .7; margin-left: 4px; }
+.toolbar .note { color: #9aa0ab; font-size: 12px; margin-left: auto; }
+.stage { position: fixed; left: 0; right: 0; bottom: 0; top: var(--toolbar-h, 56px); }
+body.clean .stage, body.record .stage { top: 0; }
+.frame-wrap { position: absolute; left: 0; top: 0; width: 1080px; height: 960px; transform-origin: 0 0; }
+
+/* ============ Frame: 1080x960, direction C "Wrapped" ============
+   Safe zones for the 9:16 Reel: the right 120px and the bottom 200px get covered by
+   X/Reels buttons and captions, so key UI lives in x 24..960, y 20..760.
+   The bottom band holds only the brand ribbon and progress stripe. */
+.frame {
+  --ink: #2b1a10; --muted: #7b5a43; --paper: #fffaf0; --red: #d8382c; --green: #2f7f50; --yellow: #f4b630;
+  --ip: #d8382c; --is: #2f7f50; --ia: #f4b630; --c1: #d8382c; --c2: #2f7f50; --c3: #3d7fd9;
+  --shadow: 5px 7px 0 rgba(70,30,10,.32);
+  --img: 114px;
+  position: relative; width: 1080px; height: 960px; overflow: hidden;
+  display: flex; flex-direction: column; padding: 20px 120px 0 24px;
+  color: var(--ink); font-family: "Fredoka", sans-serif;
+  background:
+    radial-gradient(circle at 20px 20px, rgba(255,255,255,.16) 6px, transparent 7px) 0 0 / 80px 80px,
+    radial-gradient(circle at 60px 60px, rgba(120,60,20,.10) 6px, transparent 7px) 0 0 / 80px 80px,
+    #c99a64;
+}
+
+/* top bar: provider switch, gift count, timer (all left of x=960) */
+.top { flex: none; height: 112px; display: flex; align-items: center; gap: 18px; }
+.spacer { flex: 1; }
+.count { font: 700 32px/1 "Fredoka"; background: var(--paper); padding: 14px 24px; border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.timer { flex: none; width: 116px; height: 116px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); font: 700 40px/1 "Fredoka"; font-variant-numeric: tabular-nums; box-shadow: var(--shadow); transform: rotate(6deg); }
+.prov-gpu .timer { background: #e9dcc6; }
+.timer .tl { display: none; }
+/* countdown mode (K): bigger "Christmas in 2:00" clock that only ticks down */
+.countdown .timer { width: auto; min-width: 176px; height: 120px; padding: 10px 22px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transform: rotate(3deg); }
+.countdown .timer .tl { display: block; font: 700 32px/1 "Caveat"; color: var(--red); white-space: nowrap; }
+.countdown .timer .t { font: 700 56px/1 "Fredoka"; }
+.countdown .count { padding: 12px 20px; font-size: 30px; }
+
+/* provider switch: paper toggle whose label flips over (S) */
+.switch { position: relative; flex: none; display: flex; align-items: center; gap: 16px; height: 100px; padding: 0 26px 0 16px; border-radius: 18px; background: var(--paper); box-shadow: var(--shadow); transform: rotate(1.5deg); }
+.track { position: relative; flex: none; width: 92px; height: 50px; border-radius: 25px; background: #cbbba5; box-shadow: inset 0 4px 0 rgba(70,30,10,.22); transition: background .25s; }
+.knob { position: absolute; top: 5px; left: 5px; width: 40px; height: 40px; border-radius: 50%; background: #fff; box-shadow: 0 3px 0 rgba(70,30,10,.3); transition: transform .25s cubic-bezier(.3,1.6,.5,1); }
+.flip { position: relative; width: 290px; height: 88px; perspective: 600px; }
+.flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .25s cubic-bezier(.3,1.45,.5,1); }
+.side { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.side.back { transform: rotateX(180deg); }
+.side small { font: 700 34px/1 "Caveat"; color: var(--muted); white-space: nowrap; }
+.side b { font: 700 42px/1 "Fredoka"; white-space: nowrap; }
+.side.front b { color: #8a7560; }
+.side.back b { color: var(--green); }
+.prov-fast .track { background: var(--green); }
+.prov-fast .knob { transform: translateX(42px); }
+.prov-fast .flipper { transform: rotateX(180deg); }
+.frame.instant .track, .frame.instant .knob, .frame.instant .flipper { transition: none !important; }
+.switch.stamp { animation: switchStamp .3s cubic-bezier(.2,1.7,.4,1); }
+@keyframes switchStamp { 0% { transform: scale(1.2) rotate(-5deg); } 100% { transform: rotate(1.5deg); } }
+.timer.reset { animation: timerReset .3s cubic-bezier(.2,1.8,.4,1); }
+@keyframes timerReset { 0% { transform: scale(1.35) rotate(-20deg); } 100% { transform: rotate(6deg); } }
+
+/* "sped up" / "real time" stickers (L) */
+.speed { display: none; position: absolute; z-index: 6; top: 100px; right: 262px; padding: 10px 18px 11px; border-radius: 10px; font: 700 30px/1 "Fredoka"; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; box-shadow: 3px 4px 0 rgba(70,30,10,.3); transform: rotate(-4deg); }
+.speed.slow { background: #e9dcc6; color: var(--muted); }
+.speed.realtime { background: var(--yellow); color: var(--ink); }
+.show-speed.state-slow .speed.slow, .show-speed.state-fast .speed.realtime { display: block; animation: speedIn .3s .1s cubic-bezier(.2,1.7,.4,1) both; }
+@keyframes speedIn { from { transform: scale(2) rotate(-25deg); opacity: 0; } to { transform: rotate(-4deg); opacity: 1; } }
+
+/* optional in-UI transcript strip (T) */
+.strip { display: none; flex: none; height: 72px; margin-top: 16px; padding: 0 24px; gap: 16px; align-items: center; overflow: hidden; background: var(--paper); border-radius: 18px; box-shadow: var(--shadow); }
+.frame.show-strip .strip { display: flex; }
+.strip .mic { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #c9b9a4; }
+.frame.is-listening .strip .mic { background: var(--red); animation: micDot 1s ease-in-out infinite; }
+@keyframes micDot { 50% { box-shadow: 0 0 0 8px rgba(216,56,44,.2); } }
+.strip .line { flex: 1; min-width: 0; display: flex; overflow: hidden; }
+.strip .line.overflow { justify-content: flex-end; -webkit-mask-image: linear-gradient(90deg, transparent, #000 90px); mask-image: linear-gradient(90deg, transparent, #000 90px); }
+.strip .words { margin: 0; white-space: nowrap; font: 600 38px/1 "Fredoka"; }
+.words span { display: inline-block; white-space: pre; animation: wordIn .16s ease-out both; }
+.words span.instant { animation: none; }
+@keyframes wordIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.state-end .strip { display: none !important; }
+.frame.show-strip:not(.state-end) { --img: 92px; }
+.frame.show-strip:not(.state-end) .store { display: none; }
+
+/* end-frame result band (replaces the top bar) */
+.result { display: none; flex: none; height: 232px; align-items: center; gap: 34px; padding-left: 10px; }
+.state-end .top { display: none; }
+.state-end .result { display: flex; }
+.big { font: 700 200px/.8 "Fredoka"; color: #fff; text-shadow: 7px 9px 0 var(--red), 13px 18px 0 rgba(70,30,10,.3); transform: rotate(-3deg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vs { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 400px; background: var(--paper); padding: 18px 26px 20px; border-radius: 18px; box-shadow: var(--shadow); transform: rotate(2deg); }
+.vs b { font: 700 54px/1 "Fredoka"; color: var(--red); }
+.vs span { font: 700 34px/1.05 "Caveat"; color: var(--muted); }
+.state-end .big { animation: bigIn .55s cubic-bezier(.2,1.6,.4,1) both; }
+.state-end .vs { animation: vsIn .4s .25s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes bigIn { from { transform: rotate(-20deg) scale(.4); opacity: 0; } to { transform: rotate(-3deg); opacity: 1; } }
+@keyframes vsIn { from { transform: rotate(10deg) scale(.6); opacity: 0; } to { transform: rotate(2deg); opacity: 1; } }
+.state-end { --img: 88px; }
+.state-end .store { display: none; }
+
+/* grid of gift tags: 2 columns x 4 rows, ends at y=760 */
+.grid {
+  flex: 1; min-height: 0; margin-top: 18px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 18px 20px; padding: 4px 4px 0;
+}
+.state-end .grid { margin-top: 8px; }
+.card {
+  position: relative; min-width: 0; min-height: 0;
+  display: grid; grid-template-columns: var(--img) minmax(0, 1fr); column-gap: 28px;
+  grid-template-rows: repeat(3, max-content); grid-template-areas: "img who" "img name" "img store";
+  align-content: center; align-items: center; padding: 10px 14px;
+  border-radius: 16px; border: 4px dashed rgba(255,250,240,.6); background: rgba(255,250,240,.12);
+  transform: rotate(var(--rot));
+}
+.card:nth-child(4n+1) { --rot: -1.1deg; } .card:nth-child(4n+2) { --rot: .9deg; }
+.card:nth-child(4n+3) { --rot: .7deg; } .card:nth-child(4n) { --rot: -1deg; }
+.card.is-filled, .card.is-loading { background: var(--paper); border: 4px solid transparent; box-shadow: 5px 7px 0 rgba(70,30,10,.32); }
+.card.heard { border-style: solid; border-color: var(--paper); }
+.tape { position: absolute; top: -14px; left: 50%; width: 110px; height: 28px; margin-left: -55px; background: rgba(255,240,200,.8); transform: rotate(-3deg); box-shadow: 0 1px 2px rgba(0,0,0,.1); opacity: 0; z-index: 3; }
+.card.is-filled .tape { opacity: 1; }
+
+.who { grid-area: who; font: 700 42px/1 "Caveat"; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.is-filled .who, .card.is-loading .who { color: var(--red); }
+.who small { font-size: 32px; opacity: .85; }
+
+.img { grid-area: img; position: relative; width: var(--img); height: var(--img); border-radius: 12px; display: grid; place-items: center; border: 4px dashed rgba(255,250,240,.45); }
+.card.is-filled .img, .card.is-loading .img { border: 0; background: repeating-linear-gradient(45deg, var(--tile) 0 14px, var(--tile2) 14px 28px); }
+.card:nth-child(4n+1) .img { --tile: #f6d9d3; --tile2: #fbe8e4; }
+.card:nth-child(4n+2) .img { --tile: #d6eadc; --tile2: #e7f3ea; }
+.card:nth-child(4n+3) .img { --tile: #fbe7b8; --tile2: #fdf1d3; }
+.card:nth-child(4n) .img { --tile: #d9e5f7; --tile2: #e9f0fb; }
+.img svg { width: 80%; height: 80%; opacity: 0; }
+.card.is-filled .img svg { opacity: 1; }
+.sticker { position: absolute; right: -12px; bottom: -14px; width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; background: var(--red); color: #fff; font: 700 30px/1 "Fredoka"; box-shadow: 3px 4px 0 rgba(70,30,10,.3); transform: rotate(-10deg); opacity: 0; z-index: 2; }
+.card:nth-child(even) .sticker { background: var(--green); }
+.card.is-filled .sticker { opacity: 1; }
+/* small illustration (end frame, transcript strip): shrink the sticker and push it off the art */
+.state-end .sticker, .frame.show-strip .sticker { width: 50px; height: 50px; font-size: 19px; right: auto; left: -16px; bottom: -16px; }
+
+.name, .store { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.name { grid-area: name; font: 600 36px/1.12 "Fredoka"; margin-top: 4px; }
+.store { grid-area: store; font: 500 28px/1.15 "Fredoka"; color: var(--muted); margin-top: 2px; }
+/* empty and loading: text becomes placeholder bars */
+.card:not(.is-filled) .name, .card:not(.is-filled) .store { color: transparent; border-radius: 10px; background: rgba(255,250,240,.3); }
+.card:not(.is-filled) .name { width: 88%; height: 30px; margin-top: 10px; }
+.card:not(.is-filled) .store { width: 52%; height: 22px; margin-top: 8px; }
+.card.is-loading .name, .card.is-loading .store, .card.is-loading .img::before {
+  background: linear-gradient(90deg, #efe3cf 30%, #fffaf0 50%, #efe3cf 70%) !important;
+  background-size: 300% 100% !important; animation: shimmer 1.1s linear infinite;
+}
+.card.is-loading .img::before { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.searching { display: none; position: absolute; left: calc(var(--img) + 28px); bottom: -2px; align-items: center; gap: 10px; font: 700 34px/1 "Caveat"; color: var(--muted); white-space: nowrap; }
+.card.is-loading .searching { display: flex; }
+.card.is-loading .store { visibility: hidden; }
+.spinner { width: 26px; height: 26px; border-radius: 50%; border: 4px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+
+/* landing */
+.card.land { animation: cLand .38s cubic-bezier(.25,1.5,.45,1) both; }
+.card.land .sticker { animation: stamp .3s .14s cubic-bezier(.2,1.8,.4,1) both; }
+.card.land .img svg { animation: pop .34s .06s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes cLand { from { transform: translateY(-80px) rotate(calc(var(--rot) - 8deg)) scale(1.06); opacity: 0; } 60% { opacity: 1; } to { transform: rotate(var(--rot)); opacity: 1; } }
+@keyframes stamp { from { transform: scale(2.2) rotate(-40deg); opacity: 0; } to { transform: rotate(-10deg); opacity: 1; } }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+.card.poof { animation: poof .22s ease-in both; }
+@keyframes poof { to { transform: rotate(var(--rot)) scale(.85); opacity: 0; } }
+
+/* bottom band (y 760..960, covered by Reels captions): brand + progress only */
+.foot { flex: none; height: 200px; display: flex; align-items: flex-start; gap: 24px; padding-top: 34px; }
+.brand { flex: none; display: flex; align-items: center; gap: 12px; white-space: nowrap; font: 700 30px/1 "Fredoka"; color: #fff; background: var(--red); padding: 12px 24px 12px 20px; border-radius: 10px; transform: rotate(-2deg); box-shadow: var(--shadow); }
+.brand-mark { width: 22px; height: 22px; background: var(--yellow); border-radius: 5px; transform: rotate(45deg); }
+.progress { position: relative; flex: 1; height: 24px; margin-top: 14px; border-radius: 12px; overflow: hidden; background: rgba(70,30,10,.18); }
+.progress i { position: absolute; inset: 0 auto 0 0; width: 0%; background: repeating-linear-gradient(-45deg, var(--red) 0 12px, #fff 12px 24px); transition: width .18s ease-out; }
+.state-slow .progress i { transition: width 30s linear; }
+
+.frame.reduced *, .frame.reduced *::before, .frame.reduced *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+
+/* SVG product illustration parts */
+.p { fill: var(--ip); } .s { fill: var(--is); } .a { fill: var(--ia); }
+.c1 { fill: var(--c1); } .c2 { fill: var(--c2); } .c3 { fill: var(--c3); }
+.ps { fill: none; stroke: var(--ip); stroke-width: 8; stroke-linecap: round; }
+.as { fill: none; stroke: var(--ia); stroke-width: 5; stroke-linecap: round; }
+</style>
+</head>
+<body>
+<div class="toolbar" id="toolbar">
+  <div class="group">
+    <span class="label">State</span>
+    <button data-state="listening">Listening (GPU)<kbd>1</kbd></button>
+    <button data-state="slow">Slow side<kbd>2</kbd></button>
+    <button data-state="switch">Switch<kbd>3</kbd></button>
+    <button data-state="fast">Fast fill<kbd>4</kbd></button>
+    <button data-state="end">End frame<kbd>5</kbd></button>
+  </div>
+  <div class="group">
+    <button id="replay">Replay<kbd>Space</kbd></button>
+    <button id="playall">Play all<kbd>P</kbd></button>
+    <button id="prov">Flip provider<kbd>S</kbd></button>
+    <button id="speedBtn" aria-pressed="true">Speed stickers<kbd>L</kbd></button>
+    <button id="cdBtn" aria-pressed="false">Countdown<kbd>K</kbd></button>
+    <button id="strip" aria-pressed="false">Transcript strip<kbd>T</kbd></button>
+    <button id="motion" aria-pressed="false">Reduce motion<kbd>M</kbd></button>
+  </div>
+  <span class="note">Mock data. H hides this bar. ?record=1 shows the frame at exact 1080x960 physical px.</span>
+</div>
+
+<div class="stage" id="stage">
+  <div class="frame-wrap" id="wrap">
+    <div class="frame" id="frame">
+      <header class="top">
+        <div class="switch" id="switch">
+          <span class="track"><span class="knob"></span></span>
+          <span class="flip"><span class="flipper">
+            <span class="side front"><small id="model1">Kimi K3.1 Pro</small><b id="gpuLabel">GPU provider</b></span>
+            <span class="side back"><small id="model2">Kimi K3.1 Pro</small><b id="fastLabel">Cerebras</b></span>
+          </span></span>
+        </div>
+        <span class="spacer"></span>
+        <span class="count" id="count">0 of 8 gifts</span>
+        <span class="timer" id="timer"><small class="tl">Christmas in</small><span class="t" id="timerT">0.0s</span></span>
+      </header>
+      <span class="speed slow" id="speedSlow">Sped up 4x</span><span class="speed realtime">Real time</span>
+      <div class="strip"><span class="mic"></span><div class="line" id="line"><p class="words" id="words"></p></div></div>
+      <section class="result">
+        <div class="big" id="big">4.2s</div>
+        <div class="vs"><b id="vsnum">vs 38s</b><span id="vsline">for 1 gift on a GPU provider</span><span id="allline">all 8 gifts on Cerebras</span></div>
+      </section>
+      <main class="grid" id="grid"></main>
+      <footer class="foot">
+        <div class="brand"><span class="brand-mark"></span>Santa's Speedy Shopper</div>
+        <div class="progress"><i id="bar"></i></div>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Mock data (all products and stores are invented) ----------
+const ICONS = {
+  coffee: '<path class="s" d="M24 26h52l-14 26H38z"/><rect class="p" x="44" y="50" width="12" height="8" rx="2"/><path class="p" d="M30 58h40v6c0 14-9 24-20 24s-20-10-20-24z"/><path class="a" d="M38 66h24v4H38z"/><path class="as" d="M44 10c-4 5 4 8 0 13M56 10c-4 5 4 8 0 13"/>',
+  headphones: '<path class="ps" d="M20 60V52a30 30 0 0 1 60 0v8"/><rect class="s" x="12" y="52" width="22" height="34" rx="9"/><rect class="s" x="66" y="52" width="22" height="34" rx="9"/><rect class="a" x="18" y="60" width="10" height="18" rx="4"/><rect class="a" x="72" y="60" width="10" height="18" rx="4"/>',
+  chalk: '<rect class="s" x="26" y="34" width="44" height="52" rx="12"/><rect class="p" x="22" y="26" width="52" height="14" rx="7"/><path class="as" d="M34 26c0-10 14-10 14-2M62 26c0-10-14-10-14-2"/><circle class="a" cx="80" cy="30" r="4"/><circle class="a" cx="86" cy="42" r="3"/><circle class="a" cx="78" cy="48" r="2.5"/><rect class="p" x="72" y="56" width="10" height="30" rx="4" transform="rotate(18 77 71)"/>',
+  controller: '<path class="p" d="M26 34h48c12 0 18 12 18 28 0 12-6 20-13 20-7 0-11-8-16-12H37c-5 4-9 12-16 12-7 0-13-8-13-20 0-16 6-28 18-28z"/><rect class="a" x="22" y="48" width="18" height="6" rx="2"/><rect class="a" x="28" y="42" width="6" height="18" rx="2"/><circle class="s" cx="68" cy="46" r="5"/><circle class="s" cx="78" cy="54" r="5"/><circle class="a" cx="58" cy="54" r="4"/>',
+  books: '<rect class="c1" x="16" y="66" width="68" height="16" rx="3"/><rect class="c2" x="22" y="50" width="60" height="16" rx="3"/><rect class="c3" x="14" y="34" width="64" height="16" rx="3"/><rect class="a" x="24" y="72" width="40" height="4" rx="2"/><rect class="a" x="30" y="56" width="34" height="4" rx="2"/><rect class="a" x="22" y="40" width="44" height="4" rx="2"/><path class="s" d="M60 14h10v18l-5-4-5 4z"/>',
+  bonsai: '<path class="s" d="M24 70h52l-6 18H30z"/><rect class="s" x="20" y="64" width="60" height="8" rx="3"/><path class="ps" d="M50 64c0-12-12-14-12-26M44 48c8-2 14-6 18-14"/><circle class="c2" cx="36" cy="32" r="14"/><circle class="c2" cx="62" cy="28" r="12"/><circle class="c2" cx="50" cy="20" r="10"/><circle class="a" cx="66" cy="44" r="9"/>',
+  candle: '<rect class="s" x="12" y="50" width="24" height="36" rx="5"/><rect class="p" x="38" y="42" width="24" height="44" rx="5"/><rect class="s" x="64" y="54" width="24" height="32" rx="5"/><path class="a" d="M24 30c5 6 6 12 0 16-6-4-5-10 0-16zM50 20c5 6 6 12 0 16-6-4-5-10 0-16zM76 34c5 6 6 12 0 16-6-4-5-10 0-16z"/>',
+  palette: '<path class="s" d="M50 14C26 14 10 30 10 50s16 36 36 36c8 0 10-6 6-11-3-4 0-9 6-9h10c12 0 22-8 22-20 0-18-18-32-40-32z"/><circle class="c1" cx="32" cy="40" r="7"/><circle class="c2" cx="48" cy="28" r="7"/><circle class="c3" cx="66" cy="32" r="7"/><circle class="a" cx="74" cy="48" r="6"/><circle class="p" cx="28" cy="60" r="7"/>'
+};
+// ---------- Story config: change the placeholder numbers and labels here ----------
+const CONFIG = {
+  model: 'Kimi K3.1 Pro',
+  gpuLabel: 'GPU provider',
+  fastLabel: 'Cerebras',
+  slowFirstGiftSeconds: 38,  // GPU timer reading when the first card finally lands
+  slowSpeedup: 4,            // the slow part plays sped up by this factor ("Sped up 4x")
+  fastAllGiftsSeconds: 1.9,  // Cerebras timer reading when all 8 cards have landed (real time)
+  cardGapMs: 150,            // time between card landings on Cerebras
+  wordMsGpu: 240,            // speaking pace, first request
+  wordMsFast: 190,           // speaking pace, second request
+  sentenceGpu: 'ok I need gifts for my mom, my dad, my sister who climbs, my brother, grandma, grandpa, my aunt and my niece',
+  sentenceFast: 'ok again, my mom, my dad, my sister who cl—',
+  // Countdown mode (K or ?countdown=1): one "Christmas in m:ss" clock for the whole story.
+  // It starts when the first request is sent, burns at the sped-up rate on the GPU part,
+  // keeps running through the provider switch (no reset) and stops when the Cerebras grid is full.
+  countdown: { enabled: false, startSeconds: 120 }
+};
+
+// ---------- Mock data (all products and stores are invented) ----------
+const PEOPLE = [
+  { who: 'Mom', name: 'Pour-over set', price: '$38', store: 'Kettle Lane', icon: 'coffee', key: 'mom,' },
+  { who: 'Dad', name: 'Headphones', price: '$79', store: 'Brightside', icon: 'headphones', key: 'dad,' },
+  { who: 'Sister', hint: 'climbs', name: 'Chalk bag kit', price: '$27', store: 'Peakline', icon: 'chalk', key: 'climbs,' },
+  { who: 'Brother', hint: 'games', name: 'Pro controller', price: '$54', store: 'PixelDepot', icon: 'controller', key: 'brother,' },
+  { who: 'Grandma', name: 'Mystery books', price: '$32', store: 'Bookhaven', icon: 'books', key: 'grandma,' },
+  { who: 'Grandpa', name: 'Bonsai kit', price: '$41', store: 'Greenroom', icon: 'bonsai', key: 'grandpa,' },
+  { who: 'Aunt', name: 'Candle trio', price: '$24', store: 'Hearth & Co', icon: 'candle', key: 'aunt' },
+  { who: 'Niece', hint: 'art', name: 'Watercolor set', price: '$22', store: 'Studio Nine', icon: 'palette', key: 'niece' }
+];
+const WORDS_GPU = CONFIG.sentenceGpu.split(' ');
+const WORDS_FAST = CONFIG.sentenceFast.split(' ');
+
+// ---------- Build DOM ----------
+const $ = id => document.getElementById(id);
+const frame = $('frame'), grid = $('grid'), wordsEl = $('words'), lineEl = $('line'), timerEl = $('timer'), countEl = $('count'), bar = $('bar'), sw = $('switch');
+grid.innerHTML = PEOPLE.map(p => `
+  <article class="card">
+    <span class="tape"></span>
+    <div class="who">${p.who}${p.hint ? ` <small>· ${p.hint}</small>` : ''}</div>
+    <div class="img">
+      <svg viewBox="0 0 100 100" aria-hidden="true">${ICONS[p.icon]}</svg>
+      <span class="searching"><span class="spinner"></span>Searching…</span>
+      <span class="sticker">${p.price}</span>
+    </div>
+    <div class="name">${p.name}</div>
+    <div class="store">${p.store}</div>
+  </article>`).join('');
+const cards = [...grid.children];
+$('model1').textContent = $('model2').textContent = CONFIG.model;
+$('gpuLabel').textContent = CONFIG.gpuLabel;
+$('fastLabel').textContent = CONFIG.fastLabel;
+$('speedSlow').textContent = `Sped up ${CONFIG.slowSpeedup}x`;
+
+// ---------- Embedding (c-split-composite.html drives this page in an iframe) ----------
+const q = new URLSearchParams(location.search);
+const EMBED = q.get('embed') === '1' && window.parent !== window;
+function post(msg) { if (EMBED) window.parent.postMessage(Object.assign({ src: 'csplit' }, msg), '*'); }
+
+// ---------- Helpers ----------
+const STATE_LIST = ['listening', 'slow', 'switch', 'fast', 'end'];   // story order, keys 1-5
+const LEGACY_KEYS = { q: 'listening', w: 'fast', e: 'slow', r: 'end' };
+let state = 'listening', provider = 'gpu', timers = [], raf = 0, playAll = false;
+let reduced = false, strip = false, speedStickers = true, countdown = CONFIG.countdown.enabled;
+
+const fmt = sec => sec < 10 ? sec.toFixed(1) + 's' : Math.floor(sec) + 's';
+function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+function stopAll() { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); raf = 0; }
+const fmtClock = sec => { sec = Math.max(0, Math.floor(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+// Story clock: seconds burned on the GPU before the switch, and countdown value at each state start
+const GPU_BURN = CONFIG.slowFirstGiftSeconds + 1.5 * CONFIG.slowSpeedup;
+const CD_START = CONFIG.countdown.startSeconds;
+const CD_AT = { listening: CD_START, slow: CD_START, switch: CD_START - GPU_BURN, fast: CD_START - GPU_BURN, end: CD_START - GPU_BURN - CONFIG.fastAllGiftsSeconds };
+function timerValue(v) { $('timerT').textContent = countdown ? fmtClock(v) : fmt(v); }
+// count-up: 0 upward; countdown: from `from` downward. `scale` = displayed seconds per real second
+function startTimer(scale, from) {
+  const t0 = performance.now();
+  const tick = () => { const e = (performance.now() - t0) / 1000 * scale; timerValue(countdown ? from - e : e); raf = requestAnimationFrame(tick); };
+  tick();
+}
+function stopTimer(v) { cancelAnimationFrame(raf); raf = 0; if (v !== undefined) timerValue(v); }
+function restartAnim(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function setProvider(p, animate) {
+  provider = p;
+  if (!animate) frame.classList.add('instant');
+  frame.classList.toggle('prov-fast', p === 'fast');
+  frame.classList.toggle('prov-gpu', p !== 'fast');
+  if (animate) restartAnim(sw, 'stamp');
+  else { void frame.offsetWidth; frame.classList.remove('instant'); }
+  post({ type: 'provider', provider: p });
+}
+function resetTimer() { if (countdown) return; stopTimer(0); restartAnim(timerEl, 'reset'); }
+function setCount(n) { countEl.textContent = `${n} of ${PEOPLE.length} gifts`; bar.style.width = (n / PEOPLE.length * 100) + '%'; }
+function filledCount() { return cards.filter(c => c.classList.contains('is-filled')).length; }
+function land(i) { cards[i].className = 'card is-filled land'; setCount(filledCount()); }
+function setListening(on) { frame.classList.toggle('is-listening', on); post({ type: 'listening', on }); }
+function showWords(list, n, instant) {
+  const shown = list.slice(0, n);
+  wordsEl.innerHTML = shown.map(w => `<span class="${instant ? 'instant' : ''}">${w} </span>`).join('');
+  lineEl.classList.remove('overflow');
+  if (wordsEl.scrollWidth > lineEl.clientWidth) lineEl.classList.add('overflow');
+  post({ type: 'words', words: shown, instant: !!instant });
+}
+function typeWords(list, step, highlight) {
+  list.forEach((w, i) => at(i * step, () => {
+    showWords(list, i + 1);
+    if (!highlight) return;
+    const c = PEOPLE.findIndex(p => p.key === w);
+    if (c >= 0 && !cards[c].classList.contains('is-filled')) cards[c].classList.add('heard');
+  }));
+  return (list.length - 1) * step;
+}
+
+// ---------- States ----------
+function run() {
+  stopAll();
+  frame.className = `frame state-${state}` + (reduced ? ' reduced' : '') + (strip ? ' show-strip' : '') + (speedStickers ? ' show-speed' : '') + (countdown ? ' countdown' : '');
+  setProvider(state === 'fast' || state === 'end' ? 'fast' : 'gpu', false);
+  cards.forEach(c => c.className = 'card');
+  bar.style.transition = 'none'; setCount(0); void bar.offsetWidth; bar.style.transition = '';
+  timerValue(countdown ? CD_AT[state] : 0);
+  wordsEl.innerHTML = '';
+  post({ type: 'state', state, playAll });
+  post({ type: 'words', words: [], instant: true });
+  setListening(false);
+  const slowLandMs = CONFIG.slowFirstGiftSeconds / CONFIG.slowSpeedup * 1000;
+
+  if (state === 'listening') {            // first request, on the GPU provider
+    setListening(true);
+    const end = typeWords(WORDS_GPU, CONFIG.wordMsGpu, true);
+    at(end + 300, () => setListening(false));
+    if (playAll) at(end + 900, () => go('slow'));
+  }
+  if (state === 'slow') {                 // painfully slow: one card searching, timer climbing (sped up)
+    showWords(WORDS_GPU, WORDS_GPU.length, true);
+    startTimer(CONFIG.slowSpeedup, CD_AT.slow);
+    at(250, () => { cards[0].className = 'card is-loading'; bar.style.width = '7%'; });
+    at(slowLandMs, () => { land(0); cards[1].className = 'card is-loading'; });
+    if (playAll) at(slowLandMs + 1500, () => go('switch'));
+  }
+  if (state === 'switch') {               // he gives up and flips the provider
+    showWords(WORDS_GPU, WORDS_GPU.length, true);
+    cards[0].className = 'card is-filled'; cards[1].className = 'card is-loading'; setCount(1);
+    timerValue(countdown ? CD_AT.switch : GPU_BURN);
+    at(450, () => {
+      setProvider('fast', true);
+      resetTimer();
+      cards.forEach(c => { if (c.className !== 'card') c.classList.add('poof'); });
+      showWords(WORDS_GPU, 0, true);
+      setCount(0);
+    });
+    at(670, () => cards.forEach(c => c.className = 'card'));
+    if (playAll) at(1500, () => go('fast'));
+  }
+  if (state === 'fast') {                 // same request again on Cerebras, real time
+    setListening(true);
+    startTimer(1, CD_AT.fast);
+    const lastMs = CONFIG.fastAllGiftsSeconds * 1000;
+    const firstMs = Math.max(200, lastMs - (PEOPLE.length - 1) * CONFIG.cardGapMs);
+    const gap = (lastMs - firstMs) / (PEOPLE.length - 1);
+    const end = typeWords(WORDS_FAST, CONFIG.wordMsFast, false);
+    PEOPLE.forEach((_, i) => at(firstMs + i * gap, () => land(i)));
+    at(lastMs, () => stopTimer(countdown ? CD_AT.end : CONFIG.fastAllGiftsSeconds));
+    at(Math.max(end, lastMs) + 200, () => setListening(false));   // he stops mid-word
+    if (playAll) at(Math.max(end, lastMs) + 2200, () => go('end'));
+  }
+  if (state === 'end') {
+    if (countdown) {
+      $('big').textContent = fmtClock(CD_AT.end);
+      $('vsnum').textContent = 'to spare';
+      $('vsline').textContent = 'before Christmas';
+      $('allline').textContent = `all ${PEOPLE.length} gifts in ${fmt(CONFIG.fastAllGiftsSeconds)} on ${CONFIG.fastLabel}`;
+    } else {
+      $('big').textContent = fmt(CONFIG.fastAllGiftsSeconds);
+      $('vsnum').textContent = `vs ${fmt(CONFIG.slowFirstGiftSeconds)}`;
+      $('vsline').textContent = `for 1 gift on a ${CONFIG.gpuLabel}`;
+      $('allline').textContent = `all ${PEOPLE.length} gifts on ${CONFIG.fastLabel}`;
+    }
+    timerValue(countdown ? CD_AT.end : CONFIG.fastAllGiftsSeconds);
+    PEOPLE.forEach((_, i) => at(i * 60, () => land(i)));
+    playAll = false;
+  }
+  syncButtons();
+}
+function go(s) { state = s; run(); }
+
+// ---------- Controls ----------
+function syncButtons() {
+  document.querySelectorAll('[data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === state));
+  $('playall').setAttribute('aria-pressed', playAll);
+  $('motion').setAttribute('aria-pressed', reduced);
+  $('strip').setAttribute('aria-pressed', strip);
+  $('speedBtn').setAttribute('aria-pressed', speedStickers);
+  $('cdBtn').setAttribute('aria-pressed', countdown);
+}
+function command(k) {
+  if (k >= '1' && k <= '5' && k.length === 1) { playAll = false; go(STATE_LIST[+k - 1]); }
+  else if (LEGACY_KEYS[k]) { playAll = false; go(LEGACY_KEYS[k]); }
+  else if (k === ' ' || k === 'replay') run();
+  else if (k === 'p') { playAll = true; go('listening'); }
+  else if (k === 's') { setProvider(provider === 'fast' ? 'gpu' : 'fast', true); resetTimer(); }
+  else if (k === 'l') { speedStickers = !speedStickers; frame.classList.toggle('show-speed', speedStickers); syncButtons(); }
+  else if (k === 'm') { reduced = !reduced; run(); }
+  else if (k === 'k') { countdown = !countdown; run(); }
+  else if (k === 't') { strip = !strip; frame.classList.toggle('show-strip', strip); syncButtons(); }
+  else if (k === 'h' && !EMBED) { document.body.classList.toggle('clean'); fit(); }
+  else return false;
+  return true;
+}
+document.querySelectorAll('[data-state]').forEach(b => b.onclick = () => { playAll = false; go(b.dataset.state); });
+$('replay').onclick = () => run();
+$('playall').onclick = () => command('p');
+$('prov').onclick = () => command('s');
+$('speedBtn').onclick = () => command('l');
+$('cdBtn').onclick = () => command('k');
+$('motion').onclick = () => command('m');
+$('strip').onclick = () => command('t');
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (command(e.key.toLowerCase())) e.preventDefault();
+});
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (!d || d.src !== 'composite') return;
+  if (d.cmd === 'state') { playAll = false; go(d.state); }
+  else if (d.cmd) command(d.cmd);
+});
+
+// ---------- Fit: exact 1080x960 physical pixels when ?record=1, scaled to fit otherwise ----------
+const RECORD = q.get('record') === '1';
+function fit() {
+  const tbh = document.body.classList.contains('clean') ? 0 : $('toolbar').offsetHeight;
+  document.documentElement.style.setProperty('--toolbar-h', tbh + 'px');
+  const wrap = $('wrap'), stage = $('stage');
+  if (RECORD) {
+    // Exact 1080x960 physical pixels, even with Windows display scaling (125%, 150%) or browser zoom.
+    // Not inside the composite iframe, which is already scaled by its parent.
+    const s = EMBED ? 1 : 1 / (window.devicePixelRatio || 1);
+    wrap.style.transform = s === 1 ? 'none' : `scale(${s})`; wrap.style.left = '0px'; wrap.style.top = '0px';
+    return;
+  }
+  const pad = document.body.classList.contains('clean') ? 0 : 24;
+  const w = stage.clientWidth - pad * 2, h = stage.clientHeight - pad * 2;
+  const s = Math.min(w / 1080, h / 960);
+  wrap.style.transform = `scale(${s})`;
+  wrap.style.left = ((stage.clientWidth - 1080 * s) / 2) + 'px';
+  wrap.style.top = ((stage.clientHeight - 960 * s) / 2) + 'px';
+}
+window.addEventListener('resize', fit);
+
+if (STATE_LIST.includes(q.get('state'))) state = q.get('state');
+if (q.get('clean') === '1' || RECORD) document.body.classList.add('clean');
+if (RECORD) document.body.classList.add('record');
+if (q.get('reduced') === '1') reduced = true;
+if (q.get('strip') === '1') strip = true;
+if (q.get('speed') === '0') speedStickers = false;
+if (q.get('countdown') === '1') countdown = true;
+fit();
+run();
+</script>
+</body>
+</html>
