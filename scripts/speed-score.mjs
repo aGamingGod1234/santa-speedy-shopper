@@ -66,6 +66,9 @@ function checkLinks(text) {
 }
 
 const results = [];
+mkdirSync(join(root, 'logs'), { recursive: true });
+const logFile = join(root, 'logs', `speed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+const save = () => writeFileSync(logFile, JSON.stringify({ thinking: args.thinking, model: args.model, label: args.label || null, results }, null, 2));
 for (let i = 0; i < Number(args.runs); i++) {
   if (i > 0) await new Promise(r => setTimeout(r, Number(args['gap-ms'])));
   const sessionKey = `agent:santa:bench-${Date.now()}`;
@@ -84,6 +87,7 @@ for (let i = 0; i < Number(args.runs); i++) {
   const r = { i, sessionKey, thinking: args.thinking, wallMs, mean: s.mean && +s.mean.toFixed(1), rates: s.rates.map(x => +x.toFixed(1)), calls: s.calls, links, unknownLinks: unknown, valid, text,
     error: s.mean === null ? `no server timing (run exit ${run.code}: ${(run.err || hist.err).split('\n').filter(l => l.trim() && !/startup phase/.test(l)).slice(-3).join(' | ')})` : undefined };
   results.push(r);
+  save(); // after every run, so an interrupted batch keeps its results
   if (r.error) console.log(`run ${i + 1}: ERROR ${r.error}`);
   else console.log(`run ${i + 1}: SCORE ${r.mean} tok/s mean | per call ${r.rates.join(', ')} | tokens ${s.calls.map(c => c.out).join('+')} | ${wallMs}ms wall | ${valid ? 'OK' : `INVALID (${links} links, ${unknown.length} not from search)`}`);
 }
@@ -92,7 +96,4 @@ if (ok.length) {
   const m = ok.map(r => r.mean).sort((a, b) => a - b);
   console.log(`valid ${ok.length}/${results.length} | median ${m[Math.floor(m.length / 2)]} | best ${ok[0].mean} (${ok[0].sessionKey})\n--- best answer ---\n${ok[0].text}`);
 }
-mkdirSync(join(root, 'logs'), { recursive: true });
-const f = join(root, 'logs', `speed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-writeFileSync(f, JSON.stringify({ thinking: args.thinking, model: args.model, label: args.label || null, results }, null, 2));
-console.log(`wrote ${f}`);
+console.log(`wrote ${logFile}`);
