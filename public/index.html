@@ -159,7 +159,7 @@ body.clean .stage, body.record .stage { top: 0; }
 .card:nth-child(even) .sticker { background: var(--green); }
 .card.is-filled .sticker { opacity: 1; }
 /* small illustration (end frame, transcript strip): shrink the sticker and push it off the art */
-.state-end .sticker, .frame.show-strip .sticker { width: 50px; height: 50px; font-size: 19px; right: auto; left: -16px; bottom: -16px; }
+.state-end .sticker, .frame.show-strip .sticker { width: 62px; height: 62px; font-size: 24px; right: auto; left: -16px; bottom: -16px; }
 
 .name, .store { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .name { grid-area: name; font: 600 36px/1.12 "Fredoka"; margin-top: 4px; }
@@ -343,7 +343,15 @@ const fmtClock = sec => { sec = Math.max(0, Math.floor(sec)); return Math.floor(
 // Story clock: seconds burned on the GPU before the switch, and countdown value at each state start
 const GPU_BURN = CONFIG.slowFirstGiftSeconds + 1.5 * CONFIG.slowSpeedup;
 const CD_START = CONFIG.countdown.startSeconds;
-const CD_AT = { listening: CD_START, slow: CD_START, switch: CD_START - GPU_BURN, fast: CD_START - GPU_BURN, end: CD_START - GPU_BURN - CONFIG.fastAllGiftsSeconds };
+// The countdown ticks in real time from the first frame (the moving clock is the hook),
+// burns at the sped-up rate on the GPU, and keeps ticking through the switch.
+const LISTEN_SEC = ((WORDS_GPU.length - 1) * CONFIG.wordMsGpu + 900) / 1000;
+const SWITCH_SEC = 1.5;
+const CD_AT = { listening: CD_START };
+CD_AT.slow = CD_AT.listening - LISTEN_SEC;
+CD_AT.switch = CD_AT.slow - GPU_BURN;
+CD_AT.fast = CD_AT.switch - SWITCH_SEC;
+CD_AT.end = CD_AT.fast - CONFIG.fastAllGiftsSeconds;
 function timerValue(v) { $('timerT').textContent = countdown ? fmtClock(v) : fmt(v); }
 // count-up: 0 upward; countdown: from `from` downward. `scale` = displayed seconds per real second
 function startTimer(scale, from) {
@@ -400,6 +408,7 @@ function run() {
 
   if (state === 'listening') {            // first request, on the GPU provider
     setListening(true);
+    if (countdown) startTimer(1, CD_AT.listening);
     const end = typeWords(WORDS_GPU, CONFIG.wordMsGpu, true);
     at(end + 300, () => setListening(false));
     if (playAll) at(end + 900, () => go('slow'));
@@ -415,6 +424,7 @@ function run() {
     showWords(WORDS_GPU, WORDS_GPU.length, true);
     cards[0].className = 'card is-filled'; cards[1].className = 'card is-loading'; setCount(1);
     timerValue(countdown ? CD_AT.switch : GPU_BURN);
+    if (countdown) startTimer(1, CD_AT.switch);
     at(450, () => {
       setProvider('fast', true);
       resetTimer();
