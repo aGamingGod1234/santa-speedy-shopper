@@ -38,7 +38,8 @@ const TOOL = {
 
 let rpcId = 0;
 async function shopSearch(query, maxUsd) {
-  const catalog = { query, context: { address_country: 'US', currency: 'USD' }, pagination: { limit: PER_PERSON } };
+  // ask for a few extra: the catalog sometimes returns stores priced in other currencies, which we drop
+  const catalog = { query, context: { address_country: 'US', currency: 'USD' }, pagination: { limit: PER_PERSON + 4 } };
   if (maxUsd) catalog.filters = { price: { max: Math.round(maxUsd * 100) } };
   // one retry: a stuck search would otherwise stall the whole run until OpenClaw's tool timeout
   for (let attempt = 0; ; attempt++) {
@@ -70,6 +71,7 @@ async function shopRequest(catalog) {
   if (j.error) throw new Error(j.error.message);
   return (j.result?.structuredContent?.products || []).map(p => {
     const v = (p.variants || []).find(x => x.availability?.available) || p.variants?.[0] || {};
+    if (v.price?.currency && v.price.currency !== 'USD') return null;
     let url = v.url || '';
     try { const u = new URL(url); for (const k of [...u.searchParams.keys()]) if (k.startsWith('utm_') || k === '_gsid') u.searchParams.delete(k); url = u.toString(); } catch {}
     return {
@@ -77,10 +79,9 @@ async function shopRequest(catalog) {
       price: v.price ? `${(v.price.amount / 100).toFixed(2)} ${v.price.currency}` : null,
       store: url ? new URL(url).hostname.replace(/^www\./, '') : null,
       url,
-      // images are a third of the payload and the model never uses them, so only the app asks for them
-      ...(INCLUDE_IMAGES ? { image: p.media?.[0]?.url || null } : {}),
+      image: p.media?.[0]?.url || null,
     };
-  });
+  }).filter(Boolean).slice(0, PER_PERSON);
 }
 
 async function findGifts({ people = [] }) {
@@ -88,11 +89,17 @@ async function findGifts({ people = [] }) {
     try { return { who: p.who, results: await shopSearch(p.query, p.max_usd) }; }
     catch (e) { return { who: p.who, error: String(e.message || e) }; }
   }));
-  // record every URL we returned so the runner can check the answer copied real links exactly
+  const products = out.flatMap(o => o.results || []);
+  // record what we returned: the runners check the answer copied real links exactly,
+  // and the app looks up each picked product's image by URL
   try {
     mkdirSync(LOG_DIR, { recursive: true });
-    writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at: new Date().toISOString(), urls: out.flatMap(o => (o.results || []).map(r => r.url)) }));
+    const at = new Date().toISOString();
+    writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at, urls: products.map(r => r.url) }));
+    writeFileSync(join(LOG_DIR, 'last-results.json'), JSON.stringify({ at, products }));
   } catch {}
+  // images are a third of the payload and the model never uses them, so they stay out of the model's context
+  if (!INCLUDE_IMAGES) for (const r of products) delete r.image;
   return JSON.stringify(out);
 }
 
