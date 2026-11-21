@@ -3,10 +3,15 @@
 // It searches Shop MCP (keyless Shopify catalog) for every person in parallel in ONE tool call,
 // and returns a compact list, so the agent needs one round trip and the next turn stays small.
 import { createInterface } from 'node:readline';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const SHOP_URL = 'https://mcp.shop.com';
 const SHOP_PROTOCOL = '2026-07-28';
 const PER_PERSON = Number(process.env.GIFT_RESULTS_PER_PERSON || 3);
+const INCLUDE_IMAGES = process.env.GIFT_INCLUDE_IMAGES === '1';
+const LOG_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'logs');
 
 const TOOL = {
   name: 'find_gifts',
@@ -72,7 +77,8 @@ async function shopRequest(catalog) {
       price: v.price ? `${(v.price.amount / 100).toFixed(2)} ${v.price.currency}` : null,
       store: url ? new URL(url).hostname.replace(/^www\./, '') : null,
       url,
-      image: p.media?.[0]?.url || null,
+      // images are a third of the payload and the model never uses them, so only the app asks for them
+      ...(INCLUDE_IMAGES ? { image: p.media?.[0]?.url || null } : {}),
     };
   });
 }
@@ -82,6 +88,11 @@ async function findGifts({ people = [] }) {
     try { return { who: p.who, results: await shopSearch(p.query, p.max_usd) }; }
     catch (e) { return { who: p.who, error: String(e.message || e) }; }
   }));
+  // record every URL we returned so the runner can check the answer copied real links exactly
+  try {
+    mkdirSync(LOG_DIR, { recursive: true });
+    writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at: new Date().toISOString(), urls: out.flatMap(o => (o.results || []).map(r => r.url)) }));
+  } catch {}
   return JSON.stringify(out);
 }
 
