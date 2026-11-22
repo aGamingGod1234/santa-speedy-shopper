@@ -21,7 +21,10 @@ const { values: a } = parseArgs({ strict: true, options: {
   // search bar unsent, then Cerebras is clicked and the same list is sent there
   'cer-only': { type: 'boolean', default: false },
   sfx: { type: 'string', default: 'store' },   // the app's sound set: store (default), or the older A, B, C
-  tall: { type: 'boolean', default: false },   // the app's 720x1280 portrait layout, recorded at 2160x3840 for 9:16 video
+  tall: { type: 'boolean', default: false },
+  // finale only, no model calls: "moonSec,moonOut,cerSec,cerOut" from two real runs of the same list (e.g. your filmed
+  // Moonshot API take and the fastest Cerebras clip), recorded as recordings/finale-moon<s>-cer<s>.mp4
+  finale: { type: 'string' },   // the app's 720x1280 portrait layout, recorded at 2160x3840 for 9:16 video
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
@@ -80,6 +83,12 @@ async function attempt(browser) {
   // without maxWidth/maxHeight the frames come at CSS size instead of device pixels
   await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: VW, maxHeight: VH, everyNthFrame: 1 });
   await sleep(1500);
+  if (a.finale) {
+    const [ms, mo, cs, co] = a.finale.split(',').map(Number);
+    await page.evaluate(([ms, mo, cs, co]) => { times.slow = ms; outTok.slow = mo; times.fast = cs; outTok.fast = co; cart = Array(CFG.slots).fill({ price: '0' }); }, [ms, mo, cs, co]);
+    await page.keyboard.press('e'); await sleep(8800);
+    return finish({ moon: ms, cer: cs, name: `finale-moon${ms}-cer${cs}.mp4` });
+  }
   await clickEl(page, '#aiTab');
   await sleep(900);
   let moon = null;
@@ -103,18 +112,21 @@ async function attempt(browser) {
     if (!cer) failText = await page.evaluate(() => [...document.querySelectorAll('.st')].at(-1)?.textContent).catch(() => '');
     if (cer) { await sleep(2500); await page.keyboard.press('e'); await sleep(8500); }   // the finale runs about 8 s
   }
+  return finish({ moon, cer, failText });
+
+  async function finish({ moon, cer, failText = '', name }) {
   await cdp.send('Page.stopScreencast').catch(() => {});
   await sleep(300);
   const events = await page.evaluate(() => window.__events).catch(() => []);
   await ctx.close();
   let clip = null;
-  if (moon && (moon > 0 || cer) && frames.length > 10) {   // a clip is kept even when the Cerebras half fails, for the Moonshot part
+  if ((name || (moon && (moon > 0 || cer))) && frames.length > 10) {   // a clip is kept even when the Cerebras half fails, for the Moonshot part
     // frames arrive only when the page changes: give each one its real on-screen duration, then resample to 30 fps
     const list = frames.map((f, i) => `file '${f.file.replace(/\\/g, '/')}'\nduration ${Math.max(0.001, ((frames[i + 1]?.t ?? f.t + 0.1) - f.t)).toFixed(4)}`).join('\n')
       + `\nfile '${frames.at(-1).file.replace(/\\/g, '/')}'\n`;
     const listFile = join(frameDir, 'list.txt');
     writeFileSync(listFile, list);
-    clip = join(outDir, `seg-${sgt()}${a.tall ? '-tall' : ''}${moon > 0 ? '-moon' + moon.toFixed(1) : ''}-cer${cer ? cer.toFixed(1) : 'failed'}.mp4`);
+    clip = join(outDir, name || `seg-${sgt()}${a.tall ? '-tall' : ''}${moon > 0 ? '-moon' + moon.toFixed(1) : ''}-cer${cer ? cer.toFixed(1) : 'failed'}.mp4`);
     // sound effects at the moments the page played them (event times and frame times share the wall clock)
     const start = frames[0].t * 1000, end = frames.at(-1).t * 1000;
     const ins = [], parts = [];
@@ -138,11 +150,13 @@ async function attempt(browser) {
   const span = frames.length > 1 ? frames.at(-1).t - frames[0].t : 0;
   rmSync(frameDir, { recursive: true, force: true });
   return { moon, cer, clip, failText, fps: span ? (frames.length / span).toFixed(1) : '-' };
+  }
 }
 
 const until = Date.parse(a.until);
 const browser = await chromium.launch({ channel: 'msedge' });
 let good = 0;
+if (a.finale) { const r = await attempt(browser); note(`finale: ${r.clip}`); await browser.close(); process.exit(0); }
 for (let i = 1; i <= Number(a.attempts) && good < Number(a.good) && Date.now() < until; i++) {
   if (i > 1) await sleep(Number(a['gap-sec']) * 1000);
   try {

@@ -260,10 +260,31 @@ svg { display: block; }
 .tall .fin .note { height: 110px; padding: 0 60px; text-align: center; }
 .tall .fin .lock .row img { height: 62px; } .tall .fin .lock .row img.k { height: 52px; } .tall .fin .lock .hair { height: 62px; }
 .tall .fin .lock h2 { font-size: 40px; text-align: center; line-height: 1.15; max-width: 560px; }
+/* ---------- split (?split=1): 720x896, the screen half of a 1080x1920 video with the face cam above (1080x576) ---------- */
+.split { height: 896px; }
+.split .aip { height: 788px; }
+.split .side { grid-template-columns: 1fr 1.25fr; }
+.split .side > .card:first-child { display: none; }
+.split .spdc { grid-column: auto; grid-template-columns: 1fr 1fr; column-gap: 10px; padding: 10px 12px; }
+.split .spdc .stats { grid-column: 1 / -1; grid-row: auto; margin-bottom: 2px; }
+.split .spdc .trow { grid-column: 1 / -1; margin-top: 1px; font-size: 12px; }
+.split .spdc .trow:nth-of-type(3) { display: none; }
+.split .stat b { font-size: 34px; }
+.split .spdc .spd { font-size: 9.5px; margin-top: 4px; }
+.split .chead { display: none; }
+.split .msgs { padding: 10px 14px 6px; gap: 9px; }
+.split .g { height: 62px; grid-template-columns: 54px minmax(0, 1fr) auto; grid-template-rows: 14px 22px 1fr; padding: 4px 10px 4px 4px; }
+.split .g .img { height: 54px; } .split .g .img img { max-height: 48px; }
+.split .g .pr { font-size: 19px; } .split .g .btn { height: 22px; font-size: 11px; }
+.split .gifts { gap: 5px; }
+.split .fin .R .tm { font-size: 200px; } .split .fin .R .lg { height: 58px; }
+.split .fin .x { top: 640px; }
+.split .fin .note { height: 80px; }
 .st .el { margin-left: auto; font-weight: 700; color: #6b7070; font-variant-numeric: tabular-nums; }
 /* fake cursor for unattended recordings (?cursor=1): the screencast has no OS cursor */
 .fc { position: absolute; z-index: 30; left: 0; top: 0; pointer-events: none; display: none; transition: transform .45s cubic-bezier(.3,.1,.2,1); }
 .show-fc .fc { display: block; }
+.fin.show ~ .fc { display: none !important; }
 .fc.click svg { animation: click .2s ease; }
 @keyframes click { 50% { transform: scale(.82); } }
 </style>
@@ -634,13 +655,14 @@ window.__cursor = (x, y, click) => { const f = $('fc'); f.style.transform = `tra
 function fit() {
   const tb = document.body.classList.contains('clean') ? 0 : $('toolbar').offsetHeight;
   document.documentElement.style.setProperty('--tb', tb + 'px');
-  const [cw, ch] = TALL ? [720, 1280] : [1280, 720];
+  const [cw, ch] = SPLIT ? [720, 896] : TALL ? [720, 1280] : [1280, 720];
   const W = innerWidth, H = innerHeight - tb, s = Math.min(W / cw, H / ch);
   cv.style.transform = `translate(${(W - cw * s) / 2}px, ${(H - ch * s) / 2}px) scale(${s})`;
 }
 addEventListener('resize', fit);
 if (q.get('clean') === '1') document.body.classList.add('clean');
-const TALL = q.get('tall') === '1'; if (TALL) cv.classList.add('tall');
+const SPLIT = q.get('split') === '1', TALL = SPLIT || q.get('tall') === '1';
+if (TALL) cv.classList.add('tall'); if (SPLIT) cv.classList.add('split');
 cv.classList.add('prov-slow');
 greet(); setCart(); fit();
 </script>
