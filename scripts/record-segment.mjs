@@ -17,6 +17,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const { values: a } = parseArgs({ strict: true, options: {
   good: { type: 'string', default: '3' }, 'max-cer': { type: 'string', default: '10' }, attempts: { type: 'string', default: '12' },
   until: { type: 'string', default: '2026-11-22T21:30+08:00' }, 'gap-sec': { type: 'string', default: '45' },
+  // only the switch and the Cerebras run, for swapping the fastest one into a hand-recorded take: the list sits in the
+  // search bar unsent, then Cerebras is clicked and the same list is sent there
+  'cer-only': { type: 'boolean', default: false },
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
@@ -47,15 +50,16 @@ async function waitRun(page, side, timeoutMs = 150000) {
 // glide the drawn cursor (the screencast has no OS cursor) to an element, then click it for real
 async function clickEl(page, sel) {
   const b = await page.locator(sel).boundingBox();
-  const x = b.x + b.width / 2, y = b.y + b.height / 2;
-  await page.evaluate(([x, y]) => __cursor(x, y), [x, y]);
+  const x = b.x + b.width / 2, y = b.y + b.height / 2, k = 1280 / 3840;   // the drawn cursor lives in canvas pixels
+  await page.evaluate(([x, y]) => __cursor(x, y), [x * k, y * k]);
   await sleep(650);
-  await page.evaluate(([x, y]) => __cursor(x, y, true), [x, y]);
+  await page.evaluate(([x, y]) => __cursor(x, y, true), [x * k, y * k]);
   await page.mouse.click(x, y);
 }
 
 async function attempt(browser) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 3 });
+  // a 4K viewport: the app scales its 1280x720 canvas 3x, so text and images render sharp (the screencast ignores deviceScaleFactor)
+  const ctx = await browser.newContext({ viewport: { width: 3840, height: 2160 } });
   const page = await ctx.newPage();
   await page.goto(APP);
   await page.waitForLoadState('networkidle');
@@ -76,18 +80,24 @@ async function attempt(browser) {
   await sleep(1500);
   await clickEl(page, '#aiTab');
   await sleep(900);
-  await page.keyboard.press('/');
-  await page.keyboard.type(LIST, { delay: 28 });
-  await sleep(400);
-  await page.keyboard.press('Enter');
-  const moon = await waitRun(page, 'slow');
+  let moon = null;
+  if (a['cer-only']) {
+    await page.evaluate(l => { lastText = l; setQuery(l); }, LIST);
+    moon = -1;
+  } else {
+    await page.keyboard.press('/');
+    await page.keyboard.type(LIST, { delay: 28 });
+    await sleep(400);
+    await page.keyboard.press('Enter');
+    moon = await waitRun(page, 'slow');
+  }
   let cer = null, failText = '';
   if (moon) {
     await sleep(1400);
     await clickEl(page, '.seg .f');
     await sleep(800);
     await page.keyboard.press('Enter');   // resends the same list ("same list, resent")
-    cer = await waitRun(page, 'fast');
+    cer = await waitRun(page, 'fast', 45000);   // a Cerebras run slower than this is no use for the video
     if (!cer) failText = await page.evaluate(() => document.getElementById('statusText').textContent).catch(() => '');
     if (cer) { await sleep(2500); await page.keyboard.press('e'); await sleep(4000); }
   }
@@ -96,13 +106,13 @@ async function attempt(browser) {
   const events = await page.evaluate(() => window.__events).catch(() => []);
   await ctx.close();
   let clip = null;
-  if (moon && cer && frames.length > 10) {
+  if (moon && (moon > 0 || cer) && frames.length > 10) {   // a clip is kept even when the Cerebras half fails, for the Moonshot part
     // frames arrive only when the page changes: give each one its real on-screen duration, then resample to 30 fps
     const list = frames.map((f, i) => `file '${f.file.replace(/\\/g, '/')}'\nduration ${Math.max(0.001, ((frames[i + 1]?.t ?? f.t + 0.1) - f.t)).toFixed(4)}`).join('\n')
       + `\nfile '${frames.at(-1).file.replace(/\\/g, '/')}'\n`;
     const listFile = join(frameDir, 'list.txt');
     writeFileSync(listFile, list);
-    clip = join(outDir, `seg-${sgt()}-moon${moon.toFixed(1)}-cer${cer.toFixed(1)}.mp4`);
+    clip = join(outDir, `seg-${sgt()}${moon > 0 ? '-moon' + moon.toFixed(1) : ''}-cer${cer ? cer.toFixed(1) : 'failed'}.mp4`);
     // sound effects at the moments the page played them (event times and frame times share the wall clock)
     const start = frames[0].t * 1000, end = frames.at(-1).t * 1000;
     const ins = [], parts = [];
@@ -140,7 +150,7 @@ for (let i = 1; i <= Number(a.attempts) && good < Number(a.good) && Date.now() <
     const r = await attempt(browser);
     const ok = r.cer != null && r.cer <= Number(a['max-cer']);
     if (ok) good++;
-    note(`attempt ${i}: moonshot ${r.moon?.toFixed(1) ?? 'failed'}s | cerebras ${r.cer?.toFixed(1) ?? 'failed'}s | ${r.fps} captured fps | ${ok ? 'GOOD' : 'slow'} ${r.clip ? r.clip : '(no clip)'}${r.failText ? ' | ' + r.failText : ''}`);
+    note(`attempt ${i}: moonshot ${r.moon === -1 ? 'skipped ' : r.moon?.toFixed(1) ?? 'failed'}s | cerebras ${r.cer?.toFixed(1) ?? 'failed'}s | ${r.fps} captured fps | ${ok ? 'GOOD' : 'slow'} ${r.clip ? r.clip : '(no clip)'}${r.failText ? ' | ' + r.failText : ''}`);
   } catch (e) { note(`attempt ${i}: error ${e.message.split('\n')[0]}`); }
 }
 await browser.close();
