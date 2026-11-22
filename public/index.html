@@ -436,12 +436,19 @@ function play(kind, step = 0) {
 }
 
 // ---------- Christmas Eve clock (story) ----------
-const fixed = q.get('clock'); const [ch, cm, cs] = (fixed || '0:0:0').split(':').map(Number);
-let clockT0 = performance.now();
+// Story clock: Dec 24, 11:59 PM with random seconds (10 to 25), frozen until the first mouse move, key or tap, then it
+// ticks for real. ?clock=HH:MM:SS sets the start, ?clock=real shows the PC's own time and date.
+const real = q.get('clock') === 'real';
+const start = (q.get('clock') && !real ? q.get('clock') : `23:59:${10 + Math.floor(Math.random() * 16)}`).split(':').map(Number);
+const [ch, cm, cs] = start;
+let clockT0 = null;
+const startClock = () => { if (clockT0 == null) clockT0 = performance.now(); };
+['pointermove', 'pointerdown', 'keydown'].forEach(t => addEventListener(t, startClock, { capture: true, passive: true }));
 function drawClock() {
   const now = new Date();
-  $('day').textContent = fixed ? 'Dec 24' : now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const s = fixed ? ch * 3600 + cm * 60 + cs + Math.floor((performance.now() - clockT0) / 1000) : now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const run = clockT0 == null ? 0 : Math.floor((performance.now() - clockT0) / 1000);
+  const s = real ? now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() : ch * 3600 + cm * 60 + cs + run;
+  $('day').textContent = real ? now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : s >= 86400 ? 'Dec 25' : 'Dec 24';
   const h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, sec = s % 60;
   $('clock').textContent = `${(h % 12) || 12}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
@@ -596,7 +603,7 @@ function resetAll() {
   times.slow = times.fast = outTok.slow = outTok.fast = null; lastText = ''; cart = []; flipped = false; msgIn.value = '';
   provider = 'slow'; cv.classList.add('prov-slow'); cv.classList.remove('prov-fast');
   aiMode = false; cv.classList.remove('ai-mode'); showEnd(false);
-  clockT0 = performance.now(); drawClock();
+  clockT0 = null; drawClock();
   greet(); setCart(); stopWatch(0); setTokens(null);
   events.length = 0;
 }

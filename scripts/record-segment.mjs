@@ -21,6 +21,7 @@ const { values: a } = parseArgs({ strict: true, options: {
   // search bar unsent, then Cerebras is clicked and the same list is sent there
   'cer-only': { type: 'boolean', default: false },
   sfx: { type: 'string', default: 'store' },   // the app's sound set: store (default), or the older A, B, C
+  clock: { type: 'string', default: '23:59:44' },   // the shop clock's start; it starts ticking on the first click
   tall: { type: 'boolean', default: false },
   // finale only, no model calls: "moonSec,moonOut,cerSec,cerOut" from two real runs of the same list (e.g. your filmed
   // Moonshot API take and the fastest Cerebras clip), recorded as recordings/finale-moon<s>-cer<s>.mp4
@@ -29,7 +30,7 @@ const { values: a } = parseArgs({ strict: true, options: {
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
 const FFMPEG = process.env.FFMPEG || 'C:/Users/User/tools/asr/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v9.0.2.exe';
-const APP = `http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00&sfx=${a.sfx}${a.tall ? '&tall=1' : ''}`;
+const APP = `http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=${a.clock}&sfx=${a.sfx}${a.tall ? '&tall=1' : ''}`;
 const [VW, VH] = a.tall ? [2160, 3840] : [3840, 2160];   // 3x the app's canvas either way
 const LIST = 'my mom loves coffee, my dad is into music, my sister climbs, my brother games, and grandma reads mystery novels';
 const sfxDir = join(root, 'public', 'sfx');
