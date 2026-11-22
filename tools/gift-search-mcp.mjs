@@ -101,6 +101,11 @@ async function findGifts({ people = [] }) {
     const urls = [...new Set([...products.map(r => r.url), ...seen])].slice(0, 5000);
     writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at, urls }));
     writeFileSync(join(LOG_DIR, 'last-results.json'), JSON.stringify({ at, products }));
+    // url -> image, cumulative (newest 5000), so the app finds its images even when other runs search at the same time
+    let images = {};
+    try { images = JSON.parse(readFileSync(join(LOG_DIR, 'images.json'), 'utf8')); } catch {}
+    const merged = Object.entries({ ...images, ...Object.fromEntries(products.filter(p => p.image).map(p => [p.url, p.image])) });
+    writeFileSync(join(LOG_DIR, 'images.json'), JSON.stringify(Object.fromEntries(merged.slice(-5000))));
   } catch {}
   // images are a third of the payload and the model never uses them, so they stay out of the model's context
   if (!INCLUDE_IMAGES) for (const r of products) delete r.image;

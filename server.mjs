@@ -78,7 +78,10 @@ Copy the title, price, store and URL exactly from the tool result. No other text
 
 // "mom: Bolt Chalk Bag, 25.00 USD, madrock.com, https://..." (titles can contain commas, so parse from the right)
 const LINE = /^\W*([^:]{1,40}):\s*(.+),\s*([^,]*\d[^,]*),\s*([^,\s]+),\s*(https?:\/\/\S+?)[.,;]?\s*$/;
+const IMAGES_FILE = resolve(RESULTS_FILE, '..', 'images.json');
 async function imageFor(url) {
+  // images.json is cumulative, so parallel searches from other runs can't push this run's images out
+  try { const img = JSON.parse(await readFile(IMAGES_FILE, 'utf8'))[url]; if (img) return img; } catch {}
   try {
     const { products } = JSON.parse(await readFile(RESULTS_FILE, 'utf8'));
     return products.find(p => p.url === url)?.image || null;
