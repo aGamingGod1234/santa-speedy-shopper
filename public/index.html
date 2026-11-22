@@ -51,7 +51,7 @@ svg { display: block; }
 .cart .lbl b { font-size: 15px; font-variant-numeric: tabular-nums; }
 .cart.bump .ic { animation: bump .35s cubic-bezier(.2,1.8,.4,1); }
 @keyframes bump { 0% { transform: scale(1.35) rotate(-8deg); } 100% { transform: none; } }
-.plus { position: absolute; right: 2px; top: 60px; background: #067d62; color: #fff; font-weight: 700; font-size: 13px; padding: 3px 7px; border-radius: 5px; opacity: 0; pointer-events: none; z-index: 5; }
+.plus { position: absolute; right: 100%; margin-right: 6px; top: 14px; background: #067d62; color: #fff; font-weight: 700; font-size: 13px; padding: 3px 7px; border-radius: 5px; opacity: 0; pointer-events: none; z-index: 5; }
 .plus.show { animation: plus 1.1s ease-out both; }
 @keyframes plus { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 
@@ -101,90 +101,122 @@ svg { display: block; }
 .box.aibox .demo i { color: #febd69; font-style: normal; font-weight: 700; display: block; font-size: 11px; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 4px; }
 .box.aibox .btn { margin-top: auto; background: #febd69; color: #131921; font-weight: 800; text-align: center; padding: 10px; border-radius: 20px; font-size: 14.5px; }
 
-/* ---------- AI shopper ---------- */
-.ai { display: none; padding: 14px 20px 0; }
-.ai-mode .ai { display: block; }
-.ai-head { display: flex; align-items: center; gap: 14px; height: 58px; }
-.ai-head h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.4px; white-space: nowrap; }
-.model { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d5d9d9; border-radius: 10px; padding: 5px 6px 5px 12px; }
-.model .mn { font-size: 13px; line-height: 1.1; white-space: nowrap; }
-.model .mn small { display: block; color: #565959; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-.model .mn b { font-size: 14px; }
-.seg { display: flex; background: #f0f2f2; border-radius: 8px; padding: 3px; }
-.seg button { font: inherit; font-size: 13.5px; font-weight: 700; border: 0; background: transparent; color: #565959; padding: 7px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; transition: background .2s, color .2s; }
-.prov-slow .seg .s, .prov-fast .seg .f { background: #fff; color: #0f1111; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
-.prov-fast .seg .f { background: #f15a29; color: #fff; }
-.seg.flash { animation: flash .45s cubic-bezier(.2,1.7,.4,1); }
-@keyframes flash { 0% { transform: scale(1.12); } 100% { transform: none; } }
-.resent { font-size: 12.5px; font-weight: 700; color: #8a4b00; background: #fff4d6; border: 1px solid #f3d38a; padding: 5px 9px; border-radius: 14px; white-space: nowrap; opacity: 0; }
-.resent.show { animation: resent 2.6s ease both; }
-@keyframes resent { 0% { opacity: 0; transform: translateY(-6px); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-.ai-head .sp { flex: 1; }
-.watch { text-align: right; line-height: 1; white-space: nowrap; }
-.watch small { display: block; font-size: 10.5px; font-weight: 700; color: #565959; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px; }
-.watch b { font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
-.prov-fast .watch b { color: #c4410f; }
-.status { height: 40px; display: flex; align-items: center; gap: 10px; font-size: 14.5px; color: #333; margin-bottom: 8px; border-radius: 8px; padding: 0 12px; background: #fff; border: 1px solid #e3e6e6; }
-.status .dot { width: 9px; height: 9px; border-radius: 50%; background: #9aa0a6; flex: none; }
-.status.busy .dot { background: #f15a29; animation: rec 1s infinite; }
-.prov-slow .status.busy .dot { background: #007185; }
-.status.done { background: #067d62; border-color: #067d62; color: #fff; font-weight: 700; font-size: 16px; }
-.status.done .dot { background: #fff; }
-.status.done.pop { animation: banner .5s cubic-bezier(.2,1.6,.4,1); }
-@keyframes banner { 0% { transform: scale(.94); opacity: .3; } 100% { transform: none; opacity: 1; } }
-.status.error { background: #fff1ee; border-color: #f0b4a6; color: #b12704; }
-.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-.t { position: relative; background: #fff; border-radius: 8px; height: 470px; padding: 12px; display: flex; flex-direction: column; border: 1px solid #e3e6e6; }
-.t .for { font-size: 12px; font-weight: 800; color: #c7511f; text-transform: uppercase; letter-spacing: .5px; height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t .img { height: 196px; margin: 8px 0 10px; display: grid; place-items: center; background: #f7f8f8; border-radius: 6px; overflow: hidden; }
-.t .img img { max-width: 88%; max-height: 180px; mix-blend-mode: multiply; }
-.t .img.noimg::after { content: "🎁"; font-size: 64px; }
-.t .img.noimg img { display: none; }
-.t .ti { font-size: 15px; line-height: 1.3; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; min-height: 58px; }
-.t .pr { font-size: 26px; font-weight: 700; margin-top: 8px; letter-spacing: -.5px; }
-.t .pr sup { font-size: 13px; font-weight: 600; vertical-align: 10px; margin: 0 1px; }
-.t .st { font-size: 12.5px; color: #007185; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t .btn { margin-top: auto; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 14px; font-weight: 600; background: #f0f2f2; color: #565959; }
-.t.empty .img, .t.wait .img { background: #f0f2f2; }
-.t.empty .btn { visibility: hidden; }
-.t .sk { border-radius: 5px; background: #eef0f0; }
-.t.wait .sk { background: linear-gradient(90deg, #eef0f0 30%, #f8f9f9 50%, #eef0f0 70%); background-size: 300% 100%; animation: shimmer 1.2s linear infinite; }
-.t.wait .img { background: linear-gradient(90deg, #eef0f0 30%, #f8f9f9 50%, #eef0f0 70%); background-size: 300% 100%; animation: shimmer 1.2s linear infinite; }
-@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
-.spin { width: 15px; height: 15px; border: 2.5px solid #d5d9d9; border-top-color: #c7511f; border-radius: 50%; animation: spin .8s linear infinite; }
+/* ---------- AI shopper: chat on the left, model and speed panel on the right ---------- */
+.aip { display: none; padding: 12px 20px 10px; height: 612px; grid-template-columns: minmax(0, 1fr) 292px; gap: 14px; }
+.ai-mode .aip { display: grid; }
+.chat { background: #fff; border: 1px solid #dfe3e3; border-radius: 14px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.chead { height: 52px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-bottom: 1px solid #eceeee; }
+.av { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center; background: linear-gradient(135deg, #ff9900, #f15a29); color: #fff; font-size: 16px; }
+.chead b { font-size: 16px; font-weight: 800; letter-spacing: -.2px; }
+.chead small { display: block; font-size: 11.5px; color: #6b7070; font-weight: 500; }
+.chead .newc { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #444; border: 1px solid #d5d9d9; border-radius: 16px; padding: 5px 11px; }
+.msgs { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 14px 18px 8px; display: flex; flex-direction: column; gap: 12px; }
+.m { display: flex; gap: 10px; align-items: flex-start; animation: up .3s ease both; }
+.m .av { width: 28px; height: 28px; font-size: 13px; }
+.m .body { min-width: 0; flex: 1; }
+.bub { display: inline-block; font-size: 14.5px; line-height: 1.4; padding: 9px 13px; border-radius: 14px; background: #f2f4f4; color: #0f1111; max-width: 640px; }
+.m.me { justify-content: flex-end; }
+.m.me .bub { background: #131921; color: #fff; border-bottom-right-radius: 4px; max-width: 620px; }
+.m.me .tag { display: block; text-align: right; font-size: 11.5px; font-weight: 700; color: #8a4b00; margin-bottom: 4px; }
+.sys { align-self: center; font-size: 12px; font-weight: 600; color: #555; background: #f2f4f4; border-radius: 12px; padding: 4px 11px; animation: up .3s ease both; }
+.prov-fast .sys.sw { background: #fde9e1; color: #b63b10; }
+.st { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #444; height: 28px; }
+.st.ok { color: #067d62; font-weight: 700; font-size: 16px; }
+.st.err { color: #b12704; }
+.spin { width: 14px; height: 14px; border: 2.5px solid #d5d9d9; border-top-color: #f15a29; border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+.prov-slow .spin { border-top-color: #007185; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.t.filled { cursor: pointer; }
-.t.filled .btn { background: #e7f4e8; color: #067d62; }
-.t.land { animation: land .45s cubic-bezier(.2,1.4,.4,1) both; }
-.t.land .img img { animation: pop .4s .05s cubic-bezier(.2,1.6,.4,1) both; }
-.t.land .btn { animation: pop .35s .18s cubic-bezier(.2,1.8,.4,1) both; }
-@keyframes land { 0% { transform: translateY(18px); opacity: .2; box-shadow: none; } 100% { transform: none; opacity: 1; } }
+@keyframes up { from { transform: translateY(8px); opacity: 0; } }
+.gifts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; margin: 6px 0 4px; }
+.g { background: #fff; border: 1px solid #e3e6e6; border-radius: 10px; padding: 8px; height: 228px; display: flex; flex-direction: column; min-width: 0; }
+.g .for { font-size: 10.5px; font-weight: 800; color: #c7511f; text-transform: uppercase; letter-spacing: .4px; height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g .img { height: 96px; margin: 5px 0 6px; display: grid; place-items: center; background: #f7f8f8; border-radius: 6px; overflow: hidden; }
+.g .img img { max-width: 90%; max-height: 88px; mix-blend-mode: multiply; }
+.g .img.noimg::after { content: "🎁"; font-size: 46px; }
+.g .img.noimg img { display: none; }
+.g .ti { font-size: 12.5px; line-height: 1.28; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 32px; }
+.g .pr { font-size: 19px; font-weight: 700; margin-top: 4px; letter-spacing: -.3px; }
+.g .pr sup { font-size: 10px; font-weight: 600; vertical-align: 7px; margin: 0 1px; }
+.g .so { font-size: 10.5px; color: #007185; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g .btn { margin-top: auto; height: 26px; border-radius: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11.5px; font-weight: 600; background: #f0f2f2; color: #565959; }
+.g .sk { border-radius: 4px; background: linear-gradient(90deg, #eef0f0 30%, #f8f9f9 50%, #eef0f0 70%); background-size: 300% 100%; animation: shimmer 1.2s linear infinite; }
+.g.wait .img { background: linear-gradient(90deg, #eef0f0 30%, #f8f9f9 50%, #eef0f0 70%); background-size: 300% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+.g.filled { cursor: pointer; }
+.g.filled .btn { background: #e7f4e8; color: #067d62; }
+.g.land { animation: land .45s cubic-bezier(.2,1.4,.4,1) both; }
+.g.land .img img { animation: pop .4s .05s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes land { 0% { transform: translateY(14px); opacity: .2; } 100% { transform: none; opacity: 1; } }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
-
-/* ---------- order summary (E) ---------- */
-.modal { position: absolute; inset: 0; background: rgba(15,17,17,.55); display: none; align-items: center; justify-content: center; z-index: 20; }
-.modal.show { display: flex; animation: fade .25s ease both; }
-@keyframes fade { from { opacity: 0; } }
-.sheet { width: 900px; background: #fff; border-radius: 14px; display: grid; grid-template-columns: 1.1fr 1fr; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
-.modal.show .sheet { animation: sheet .45s cubic-bezier(.2,1.5,.4,1) both; }
-@keyframes sheet { from { transform: translateY(30px) scale(.96); opacity: 0; } }
-.sheet .l { padding: 34px 36px; }
-.sheet .ok { display: flex; align-items: center; gap: 10px; color: #067d62; font-weight: 800; font-size: 17px; }
-.sheet .ok i { width: 28px; height: 28px; border-radius: 50%; background: #067d62; color: #fff; display: grid; place-items: center; font-style: normal; font-size: 16px; }
-.sheet .big { font-size: 120px; font-weight: 900; letter-spacing: -5px; line-height: .95; margin: 18px 0 6px; color: #c4410f; font-variant-numeric: tabular-nums; }
-.sheet .what { font-size: 19px; font-weight: 700; }
-.sheet .vs { margin-top: 14px; font-size: 16px; color: #565959; }
-.sheet .vs b { color: #0f1111; }
-.sheet .foot { margin-top: 22px; font-size: 13px; color: #565959; border-top: 1px solid #e3e6e6; padding-top: 12px; }
-.sheet .r { background: #f7f8f8; padding: 26px 26px; display: flex; flex-direction: column; }
-.sheet .r h4 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .6px; color: #565959; }
-.sheet .li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #e8eaea; }
-.sheet .li .im { width: 44px; height: 44px; background: #fff; border-radius: 6px; display: grid; place-items: center; flex: none; }
-.sheet .li img { max-width: 90%; max-height: 90%; mix-blend-mode: multiply; }
-.sheet .li span { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sheet .li span small { display: block; color: #c7511f; font-weight: 700; font-size: 10.5px; text-transform: uppercase; }
-.sheet .li b { font-size: 14px; }
-.sheet .tot { margin-top: auto; display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; padding-top: 12px; }
+.composer { flex: none; padding: 8px 14px 6px; border-top: 1px solid #eceeee; }
+.cbox { height: 50px; border: 1.5px solid #cfd4d4; border-radius: 25px; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 8px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+.cbox:focus-within { border-color: #f0a050; box-shadow: 0 0 0 3px rgba(254,189,105,.35); }
+.mic { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #f2f4f4; display: grid; place-items: center; cursor: pointer; flex: none; }
+.listening .mic { background: #e4002b; animation: rec 1s ease-in-out infinite; }
+.listening .mic svg { stroke: #fff; }
+#msg { flex: 1; min-width: 0; border: 0; outline: 0; font: 500 15px Inter, system-ui, sans-serif; color: #0f1111; background: transparent; }
+#msg::placeholder { color: #8a8f94; }
+.sendb { width: 38px; height: 38px; border-radius: 50%; border: 0; background: #131921; display: grid; place-items: center; cursor: pointer; flex: none; }
+.prov-fast .sendb { background: #f15a29; }
+.fine { font-size: 10.5px; color: #8a8f94; text-align: center; margin-top: 5px; }
+.side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.card { background: #fff; border: 1px solid #dfe3e3; border-radius: 14px; padding: 12px 14px; }
+.card h4 { margin: 0 0 8px; font-size: 10.5px; font-weight: 800; color: #6b7070; text-transform: uppercase; letter-spacing: .7px; }
+.mrow { display: flex; align-items: center; gap: 10px; }
+.mrow img { height: 30px; border-radius: 7px; }
+.mrow b { font-size: 15px; display: block; } .mrow small { font-size: 11.5px; color: #6b7070; }
+.opt { display: flex; align-items: center; gap: 10px; border: 1.5px solid #e3e6e6; border-radius: 10px; padding: 9px 10px; cursor: pointer; transition: border-color .2s, background .2s; }
+.opt + .opt { margin-top: 7px; }
+.opt .rd { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #c5caca; flex: none; position: relative; }
+.opt img { height: 17px; } .opt .nm { font-size: 13.5px; font-weight: 700; }
+.opt .nm small { display: block; font-size: 11px; font-weight: 500; color: #6b7070; }
+.prov-slow .opt.s { border-color: #131921; background: #f7f8f8; }
+.prov-slow .opt.s .rd, .prov-fast .opt.f .rd { border-color: currentColor; }
+.prov-slow .opt.s .rd::after, .prov-fast .opt.f .rd::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: currentColor; }
+.prov-fast .opt.f { border-color: #f15a29; background: #fff6f2; color: #f15a29; }
+.prov-fast .opt.f .nm { color: #0f1111; }
+.opt.flash { animation: flash .45s cubic-bezier(.2,1.7,.4,1); }
+@keyframes flash { 0% { transform: scale(1.06); } 100% { transform: none; } }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat small { display: block; font-size: 11px; font-weight: 600; color: #6b7070; }
+.stat b { font-size: 30px; font-weight: 900; letter-spacing: -1px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.prov-fast .stat b { color: #c4410f; }
+.trow { display: flex; justify-content: space-between; font-size: 12.5px; color: #444; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.trow b { font-weight: 700; color: #0f1111; }
+.spd { font-size: 10.5px; color: #8a8f94; margin-top: 6px; line-height: 1.35; }
+/* ---------- finale (E): Cerebras time, then the split vs Moonshot API, then the lockup ---------- */
+.fin { position: absolute; inset: 0; z-index: 20; display: none; overflow: hidden; background: #fff url(brand/grid.png) center / cover; font-family: Inter, system-ui, sans-serif; }
+.fin.show { display: block; animation: finIn .35s ease both; }
+@keyframes finIn { from { opacity: 0; } }
+.fin .pane { position: absolute; top: 0; bottom: 0; padding-bottom: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: left .7s cubic-bezier(.7,0,.2,1), width .7s cubic-bezier(.7,0,.2,1); }
+.fin .on { font-size: 20px; font-weight: 600; color: #555; letter-spacing: .2px; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
+.fin .lg { margin: 10px 0 4px; transition: height .7s cubic-bezier(.7,0,.2,1); }
+.fin .tm { font-weight: 900; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
+.fin .what { font-size: 22px; font-weight: 700; color: #222; margin-top: 4px; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
+.fin .R { left: 0; width: 1280px; }
+.fin .R .lg { height: 70px; } .fin .R .tm { font-size: 260px; color: #f15a29; } .fin .R .on { font-size: 24px; }
+.fin.show .R .tm { animation: tmIn .6s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes tmIn { from { transform: scale(.6); opacity: 0; } }
+.fin .L { left: -640px; width: 640px; background: rgba(240,240,240,.92); filter: grayscale(1); }
+.fin .L .lg { height: 40px; } .fin .L .tm { font-size: 150px; color: #8a8a8a; } .fin .L .what { color: #777; }
+.fin.split .R { left: 640px; width: 640px; } .fin.split .R .lg { height: 52px; } .fin.split .R .tm { font-size: 150px; } .fin.split .R .on { font-size: 20px; }
+.fin.split .L { left: 0; }
+.fin .x { position: absolute; left: 640px; top: 300px; transform: translate(-50%, -50%) scale(0); width: 150px; height: 150px; border-radius: 50%; background: #f15a29; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 14px 40px rgba(241,90,41,.4); z-index: 2; transition: transform .45s .55s cubic-bezier(.2,1.7,.4,1); }
+.fin .x b { font-size: 46px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; } .fin .x span { font-size: 16px; font-weight: 700; }
+.fin.split .x { transform: translate(-50%, -50%) scale(1); }
+.fin .note { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #666; opacity: 0; transition: opacity .4s .8s; }
+.fin.split .note { opacity: 1; }`n.fin.lockup .x { transform: translate(-50%, -50%) scale(0); transition-delay: 0s; }
+.fin .lock { position: absolute; inset: 0; z-index: 3; background: #fff url(brand/grid.png) center / cover; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; opacity: 0; pointer-events: none; transition: opacity .5s; }
+.fin.lockup .lock { opacity: 1; }
+.fin .lock .row { display: flex; align-items: center; gap: 34px; }
+.fin .lock .row img { height: 78px; } .fin .lock .row img.k { height: 66px; }
+.fin .lock .hair { width: 1.5px; height: 78px; background: #bbb; }
+.fin .lock h2 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -.6px; color: #111; }
+.fin .lock h2 em { font-style: normal; color: #f15a29; }
+.fin .lock p { margin: -12px 0 0; font-size: 17px; color: #666; }
+.fin.lockup .lock .row { animation: tmIn .6s .1s cubic-bezier(.2,1.4,.4,1) both; }
+.fin.lockup .lock h2 { animation: up .5s .35s ease both; } .fin.lockup .lock p { animation: up .5s .5s ease both; }
+@keyframes up { from { transform: translateY(14px); opacity: 0; } }
 
 /* fake cursor for unattended recordings (?cursor=1): the screencast has no OS cursor */
 .fc { position: absolute; z-index: 30; left: 0; top: 0; pointer-events: none; display: none; transition: transform .45s cubic-bezier(.3,.1,.2,1); }
@@ -233,25 +265,43 @@ svg { display: block; }
     <div class="shelf" id="shelf"></div>
   </section>
 
-  <section class="ai">
-    <div class="ai-head">
-      <h1>AI Shopper</h1>
-      <div class="model"><div class="mn"><small>Model</small><b>Kimi K3.1 Pro</b></div>
-        <div class="seg" id="seg"><button class="s" data-k="s">Moonshot API</button><button class="f" data-k="s">Cerebras</button></div></div>
-      <span class="resent" id="resent">↻ same list, resent</span>
-      <span class="sp"></span>
-      <div class="watch"><small>AI shopping time</small><b id="watch">0.0s</b></div>
+  <section class="aip">
+    <div class="chat">
+      <div class="chead"><div class="av">✨</div><div><b>AI Shopper</b><small>Finds real gifts from real stores and adds them to your cart</small></div><span class="newc">+ New chat</span></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <div class="cbox">
+          <button class="mic" id="micBtn" title="Talk (Space)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+          <input id="msg" autocomplete="off" placeholder="Tell me who you're shopping for…">
+          <button class="sendb" id="sendBtn" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+        <div class="fine">Runs on OpenClaw with Kimi K3.1 Pro · Santa's Speedy Shopper challenge · Cerebras × Kimi × OpenClaw Hackathon</div>
+      </div>
     </div>
-    <div class="status" id="status"><span class="dot"></span><span id="statusText">Say who you're shopping for. The AI searches real stores and fills your cart.</span></div>
-    <div class="grid" id="grid"></div>
+    <aside class="side">
+      <div class="card"><h4>Model</h4><div class="mrow"><img src="brand/kimi_logo.svg" alt="" style="height:24px"><div><b>Kimi K3.1 Pro</b><small>by Moonshot AI</small></div></div></div>
+      <div class="card"><h4>Provider</h4>
+        <div class="opt s" data-p="slow"><span class="rd"></span><div class="nm">Moonshot API<small>Kimi's own API</small></div></div>
+        <div class="opt f" data-p="fast"><span class="rd"></span><div class="nm">Cerebras<small>Cerebras inference</small></div></div>
+      </div>
+      <div class="card"><h4>Speed</h4>
+        <div class="stats"><div class="stat"><small>Time</small><b id="watch">0.0s</b></div><div class="stat"><small>Tokens/sec</small><b id="tps">–</b></div></div>
+        <div class="trow"><span>Output tokens</span><b id="tokOut">–</b></div>
+        <div class="trow"><span>Total tokens</span><b id="tokAll">–</b></div>
+        <div class="spd">Time: from sending your list to the last gift in the cart. Tokens/sec: output tokens over that time, tool calls included.</div>
+      </div>
+      <div class="card"><h4>Cart</h4><div class="trow" style="margin:0"><span id="cartItems">0 items</span><b id="cartTot">$0.00</b></div></div>
+    </aside>
   </section>
 
-  <div class="modal" id="modal"><div class="sheet">
-    <div class="l"><div class="ok"><i>✓</i>All gifts in your cart</div>
-      <div class="big" id="mBig"></div><div class="what" id="mWhat"></div><div class="vs" id="mVs"></div>
-      <div class="foot" id="mFoot"></div></div>
-    <div class="r"><h4>Your cart</h4><div id="mList"></div><div class="tot"><span>Subtotal</span><span id="mTot"></span></div></div>
-  </div></div>
+  <div class="fin" id="fin">
+    <div class="pane L"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/moonshot_logo.svg" alt="Moonshot AI"><div class="on" style="font-size:17px">Moonshot API</div><div class="tm" id="fSlow"></div><div class="what" id="fSlowWhat"></div></div>
+    <div class="pane R"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/cerebras_logo.svg" alt="Cerebras"><div class="tm" id="fFast"></div><div class="what" id="fFastWhat"></div></div>
+    <div class="x"><b id="fX"></b><span>faster</span></div>
+    <div class="note">Same list, same model, same app. Time from sending the list to every gift in the cart.</div>
+    <div class="lock"><div class="row"><img src="brand/cerebras_logo.svg" alt="Cerebras"><span class="hair"></span><img class="k" src="brand/kimi_logo.svg" alt="Kimi"></div>
+      <h2>Cerebras <em>×</em> Kimi <em>×</em> OpenClaw Hackathon</h2><p>Santa's Speedy Shopper · built with OpenClaw</p></div>
+  </div>
   <div class="fc" id="fc"><svg width="22" height="30" viewBox="0 0 22 30"><path d="M1 1v24l6-6 4 9 4-2-4-8.5h8.5z" fill="#000" stroke="#fff" stroke-width="1.6"/></svg></div>
 </div></div>
 
@@ -275,7 +325,7 @@ const SHELF = [
 ];
 
 const $ = id => document.getElementById(id);
-const cv = $('cv'), grid = $('grid'), qEl = $('q');
+const cv = $('cv');
 const q = new URLSearchParams(location.search);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
@@ -343,28 +393,21 @@ $('shelf').innerHTML = `
 function openAI() { if (aiMode) return; aiMode = true; cv.classList.add('ai-mode'); ev('openAI'); play('tap'); }
 $('aiTab').onclick = openAI; $('heroCta').onclick = openAI; $('aiBox').onclick = openAI;
 
-// ---------- search bar text ----------
-function setQuery(text, cls = '', caret = false) {
-  qEl.className = 'q ' + cls;
-  qEl.innerHTML = text ? `<span>${esc(text)}${caret ? '<i class="caret"></i>' : ''}</span>` : `<span class="ph">${caret ? '<i class="caret"></i>' : ''}Say who you're shopping for…</span>`;
-}
-function setStatus(text, cls = '') { const s = $('status'); s.className = 'status ' + cls; $('statusText').textContent = text; }
-
-// ---------- tiles ----------
-function buildTiles(state) {
-  grid.innerHTML = Array.from({ length: CFG.slots }, () => `
-    <article class="t ${state}">
-      <div class="for"></div><div class="img"><img alt=""></div>
-      <div class="ti"><div class="sk" style="height:15px;width:92%"></div><div class="sk" style="height:15px;width:64%;margin-top:7px"></div></div>
-      <div class="pr"><div class="sk" style="height:24px;width:46%"></div></div><div class="st"></div>
-      <div class="btn">${state === 'wait' ? '<span class="spin"></span>Searching stores…' : ''}</div>
-    </article>`).join('');
-  cards = [...grid.children];
-}
+// ---------- chat ----------
+const msgs = $('msgs'), msgIn = $('msg');
+const GREET = "Hi! Tell me who you're shopping for, and I'll find real gifts from real stores and add them to your cart.";
+function addMsg(html, cls) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; return d; }
+function greet() { msgs.innerHTML = ''; addMsg(`<div class="av">✨</div><div class="body"><div class="bub">${GREET}</div></div>`, 'm bot'); }
+const giftCard = () => `<article class="g wait"><div class="for"></div><div class="img"><img alt=""></div>
+  <div class="ti"><div class="sk" style="height:12px;width:92%"></div><div class="sk" style="height:12px;width:60%;margin-top:6px"></div></div>
+  <div class="pr"><div class="sk" style="height:18px;width:48%"></div></div><div class="so"></div><div class="btn"><span class="spin"></span>Searching…</div></article>`;
+let runMsg = null;
+function setRunStatus(html, cls = '') { const st = runMsg?.querySelector('.st'); if (st) { st.className = 'st ' + cls; st.innerHTML = html; } }
 function setCart() {
-  $('cartN').textContent = cart.length;
-  $('cartSum').textContent = money(cart.reduce((a, g) => a + amount(g.price), 0));
-  $('bar').style.width = running || cart.length ? (cards.filter(c => c.classList.contains('filled')).length / CFG.slots * 100) + '%' : '0';
+  const sum = money(cart.reduce((a, g) => a + amount(g.price), 0));
+  $('cartN').textContent = cart.length; $('cartSum').textContent = sum;
+  $('cartItems').textContent = `${cart.length} item${cart.length === 1 ? '' : 's'}`; $('cartTot').textContent = sum;
+  $('bar').style.width = running || cart.length ? (cart.length / CFG.slots * 100) + '%' : '0';
 }
 function fill(g) {
   const c = cards.find(c => !c.classList.contains('filled'));
@@ -378,38 +421,43 @@ function fill(g) {
   c.querySelector('.ti').textContent = g.name;
   const [d, cents] = n.toFixed(2).split('.');
   c.querySelector('.pr').innerHTML = n ? `<sup>$</sup>${d}<sup>${cents}</sup>` : esc(g.price);
-  c.querySelector('.st').textContent = g.store;
-  c.querySelector('.btn').innerHTML = '✓ Added to cart';
+  c.querySelector('.so').textContent = g.store;
+  c.querySelector('.btn').innerHTML = '✓ In your cart';
   c.dataset.url = g.url; c.title = g.url;
-  c.className = 't filled land';
+  c.className = 'g filled land';
   cart.push(g); setCart();
   restart($('cart'), 'bump');
   const pl = $('plus'); pl.textContent = '+' + money(n); restart(pl, 'show');
   play('add', cart.length - 1);
-  const left = CFG.slots - cards.filter(c => c.classList.contains('filled')).length;
-  if (left > 0) setStatus(`Added a gift for ${g.who}. ${left} to go…`, 'busy');
+  setRunStatus(`<span class="spin"></span>Added a gift for ${esc(g.who)}…`);
 }
 
-// ---------- stopwatch ----------
+// ---------- speed panel ----------
 function startWatch() { runT0 = performance.now(); const tick = () => { runSec = (performance.now() - runT0) / 1000; $('watch').textContent = fmt(runSec); runRaf = requestAnimationFrame(tick); }; tick(); }
 function stopWatch(sec) { cancelAnimationFrame(runRaf); if (sec != null) runSec = sec; $('watch').textContent = fmt(runSec); }
+function setTokens(u, sec) {
+  if (!u) { ['tps', 'tokOut', 'tokAll'].forEach(id => $(id).textContent = '–'); return; }
+  $('tokOut').textContent = u.output.toLocaleString(); $('tokAll').textContent = u.total.toLocaleString();
+  const tps = u.output / sec, t0 = performance.now();   // count up to the measured value
+  const tick = () => { const p = Math.min(1, (performance.now() - t0) / 600); $('tps').textContent = Math.round(tps * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(tick); };
+  tick();
+}
 
 // ---------- run ----------
 async function send(text, resent) {
   text = text.trim();
   if (!text || running) return;
   openAI();
-  lastText = text; flipped = false;
-  if (resent) restart($('resent'), 'show');
-  setQuery(text);
+  lastText = text; flipped = false; msgIn.value = '';
+  addMsg(`<div class="bub">${resent ? '<span class="tag">↻ same list, resent</span>' : ''}${esc(text)}</div>`, 'm me');
   const side = provider;
-  running = true; cart = [];
-  buildTiles('wait'); setCart();
-  setStatus(`${CFG.model} on ${CFG.providers[side].label} is searching real stores…`, 'busy');
+  runMsg = addMsg(`<div class="av">✨</div><div class="body"><div class="st"><span class="spin"></span>${CFG.model} on ${CFG.providers[side].label} is searching real stores…</div><div class="gifts">${Array.from({ length: CFG.slots }, giftCard).join('')}</div></div>`, 'm bot');
+  cards = [...runMsg.querySelectorAll('.g')];
+  running = true; cart = []; setCart(); setTokens(null);
   ev('send:' + side);
   startWatch();
   const ctrl = new AbortController(); abortRun = ctrl;
-  let got = 0, err = null;
+  let got = 0, err = null, usage = null;
   try {
     const r = await fetch('/api/run', { method: 'POST', signal: ctrl.signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: CFG.providers[side].id, text }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
@@ -422,7 +470,9 @@ async function send(text, resent) {
       let nl;
       while ((nl = buf.indexOf('\n')) >= 0) {
         const msg = JSON.parse(buf.slice(0, nl)); buf = buf.slice(nl + 1);
+        if (msg.type === 'answer' && !got) setRunStatus(`<span class="spin"></span>Picking the best gift for each person…`);
         if (msg.type === 'gift') { got++; fill(msg); }
+        if (msg.type === 'done') usage = msg.usage || null;
         if (msg.type === 'error') err = msg.message;
       }
     }
@@ -431,77 +481,83 @@ async function send(text, resent) {
   if (ctrl.signal.aborted) return;
   const sec = (performance.now() - runT0) / 1000;
   stopWatch(sec);
-  cards.filter(c => !c.classList.contains('filled')).forEach(c => { c.className = 't empty'; c.querySelector('.btn').innerHTML = ''; });
+  cards.filter(c => !c.classList.contains('filled')).forEach(c => c.remove());
   setCart();
-  if (err || !got) { setStatus(err ? `Something went wrong: ${err}` : 'No gifts came back. Try again.', 'error'); ev('error'); return; }
+  if (err || !got) { setRunStatus(esc(err ? `Something went wrong: ${err}` : 'No gifts came back. Try again.'), 'err'); ev('error'); return; }
   times[side] = sec;
-  setStatus(`✓ All ${got} gifts added to your cart in ${fmt(sec)}`, 'done pop');
+  setTokens(usage, sec);
+  setRunStatus(`✓ All ${got} gifts added to your cart in ${fmt(sec)}`, 'ok');
   ev('done:' + side); play('done');
 }
-function flipProvider() {
+function setProvider(p) {
   if (running) { abortRun?.abort(); running = false; }
-  provider = provider === 'fast' ? 'slow' : 'fast';
-  cv.classList.toggle('prov-fast', provider === 'fast'); cv.classList.toggle('prov-slow', provider !== 'fast');
-  restart($('seg'), 'flash'); play('switch');
+  provider = p;
+  cv.classList.toggle('prov-fast', p === 'fast'); cv.classList.toggle('prov-slow', p !== 'fast');
+  restart(document.querySelector(p === 'fast' ? '.opt.f' : '.opt.s'), 'flash'); play('switch');
   flipped = true;
-  buildTiles('empty'); cart = []; setCart(); stopWatch(0);
-  setStatus(`Switched to ${CFG.model} on ${CFG.providers[provider].label}.`);
+  greet(); addMsg(`Switched to ${CFG.model} on ${CFG.providers[p].label}`, 'sys sw');
+  cart = []; setCart(); stopWatch(0); setTokens(null);
 }
+const flipProvider = () => setProvider(provider === 'fast' ? 'slow' : 'fast');
+document.querySelectorAll('.opt').forEach(o => o.addEventListener('click', () => { if (o.dataset.p !== provider) setProvider(o.dataset.p); }));
 
-// ---------- order summary (E) ----------
+// ---------- finale (E): the Cerebras time, then the split against Moonshot API, then the lockup ----------
+// every number is this session's measured run time; without a Moonshot API run it goes straight to the lockup
+let finTimers = [];
 function showEnd(on) {
-  endShown = on; $('modal').classList.toggle('show', on); if (!on) return;
-  const f = times.fast, s = times.slow, main = f ?? s, side = f != null ? 'fast' : 'slow';
-  $('mBig').textContent = fmt(main);
-  $('mWhat').textContent = `to find all ${cart.length} gifts on ${CFG.providers[side].label}`;
-  $('mVs').innerHTML = f != null && s != null ? `vs <b>${fmt(s)}</b> on ${CFG.providers.slow.label} · same list, same model` : '';
-  $('mFoot').textContent = `${CFG.model} · real products from real stores · time from sending the list to the last gift in the cart`;
-  $('mList').innerHTML = cart.map(g => `<div class="li"><div class="im">${g.image ? `<img src="${esc(g.image)}" alt="">` : '🎁'}</div><span><small>For ${esc(g.who)}</small>${esc(g.name)}</span><b>${money(amount(g.price))}</b></div>`).join('');
-  $('mTot').textContent = money(cart.reduce((a, g) => a + amount(g.price), 0));
+  endShown = on; const fin = $('fin');
+  finTimers.forEach(clearTimeout); finTimers = [];
+  fin.className = 'fin';
+  if (!on) return;
+  const f = times.fast, s = times.slow, n = cart.length;
+  if (f == null && s == null) return;
+  const main = f ?? s;
+  $('fFast').textContent = fmt(main); $('fFastWhat').textContent = `to find all ${n} gifts`;
+  $('fSlow').textContent = fmt(s); $('fSlowWhat').textContent = `to find all ${n} gifts`;
+  $('fX').textContent = f != null && s != null ? (s / f).toFixed(1) + '×' : '';
+  void fin.offsetWidth; fin.classList.add('show');
+  const both = f != null && s != null;
+  if (both) finTimers.push(setTimeout(() => fin.classList.add('split'), 1800));
+  finTimers.push(setTimeout(() => fin.classList.add('lockup'), both ? 5600 : 2600));
 }
-
 function resetAll() {
   abortRun?.abort(); running = false;
   if (rec) { rec.onend = null; rec.abort(); rec = null; }
-  typing = null; cv.classList.remove('listening');
-  times.slow = times.fast = null; lastText = ''; cart = []; flipped = false;
+  cv.classList.remove('listening');
+  times.slow = times.fast = null; lastText = ''; cart = []; flipped = false; msgIn.value = '';
   provider = 'slow'; cv.classList.add('prov-slow'); cv.classList.remove('prov-fast');
   aiMode = false; cv.classList.remove('ai-mode'); showEnd(false);
   clockT0 = performance.now(); drawClock();
-  buildTiles('empty'); setCart(); stopWatch(0); setQuery(''); $('tagText').textContent = 'Search';
-  setStatus("Say who you're shopping for. The AI searches real stores and fills your cart.");
+  greet(); setCart(); stopWatch(0); setTokens(null);
   events.length = 0;
 }
 
-// ---------- voice (browser speech service) and typing ----------
+// ---------- voice (browser speech service) ----------
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, finalText = '', typing = null;
-function listening(on) { cv.classList.toggle('listening', on); $('tagText').textContent = on ? 'Listening' : 'Search'; }
+let rec = null, finalText = '';
 function toggleMic() {
   if (rec) { rec.stop(); return; }
-  if (!SR) { setQuery('Voice needs Chrome or Edge. Press / to type.', 'err'); return; }
   openAI();
+  if (!SR) { msgIn.placeholder = 'Voice needs Chrome or Edge. Type your list instead.'; msgIn.focus(); return; }
   finalText = '';
   rec = new SR(); rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true;
-  rec.onresult = e => { let interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '; else interim += e.results[i][0].transcript; } setQuery((finalText + interim).trim()); };
-  rec.onerror = e => { if (e.error !== 'no-speech' && e.error !== 'aborted') setQuery(`Voice isn't available here (${e.error}). Press / to type the list.`, 'err'); };
-  rec.onend = () => { rec = null; listening(false); const t = finalText.trim(); if (t) send(t, false); };
-  rec.start(); listening(true); setQuery('', '', true);
+  rec.onresult = e => { let interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '; else interim += e.results[i][0].transcript; } msgIn.value = (finalText + interim).trim(); };
+  rec.onerror = e => { if (e.error !== 'no-speech' && e.error !== 'aborted') { msgIn.placeholder = `Voice isn't available here (${e.error}). Type your list instead.`; msgIn.focus(); } };
+  rec.onend = () => { rec = null; cv.classList.remove('listening'); const t = finalText.trim(); if (t) send(t, false); };
+  rec.start(); cv.classList.add('listening');
 }
-document.addEventListener('keydown', e => {
-  if (typing === null) return;
-  e.preventDefault(); e.stopImmediatePropagation();
-  if (e.key === 'Escape') { typing = null; listening(false); setQuery(''); return; }
-  if (e.key === 'Enter') { const t = typing; typing = null; listening(false); $('tagText').textContent = 'Search'; send(t, false); return; }
-  if (e.key === 'Backspace') typing = typing.slice(0, -1);
-  else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) typing += e.key;
-  setQuery(typing, '', true);
-}, true);
+$('micBtn').onclick = e => { e.stopPropagation(); toggleMic(); };
+$('sendBtn').onclick = e => { e.stopPropagation(); msgIn.value.trim() ? send(msgIn.value, false) : lastText && send(lastText, flipped); };
+msgIn.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault(); e.stopPropagation();
+  if (msgIn.value.trim()) send(msgIn.value, false); else if (lastText) send(lastText, flipped);
+});
 
-// ---------- keys and clicks ----------
+// ---------- keys and clicks (shortcuts work when the message box is not focused) ----------
 function command(k) {
   if (k === ' ') toggleMic();
-  else if (k === '/') { if (running) return true; openAI(); typing = ''; cv.classList.remove('listening'); $('tagText').textContent = 'Typing'; setQuery('', '', true); }
+  else if (k === '/') { openAI(); setTimeout(() => msgIn.focus()); }
   else if (k === 'enter') { if (lastText) send(lastText, flipped); }
   else if (k === 's') { openAI(); flipProvider(); }
   else if (k === 'g') openAI();
@@ -513,15 +569,14 @@ function command(k) {
   return true;
 }
 document.addEventListener('keydown', e => {
-  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.target === msgIn) return;
   if (command(e.key.toLowerCase())) e.preventDefault();
 });
 document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); command(b.dataset.k); }));
 cv.addEventListener('click', e => {
-  const a = e.target.closest('.t.filled, .two a');
+  const a = e.target.closest('.g.filled, .two a');
   if (a?.dataset.url) window.open(a.dataset.url, '_blank', 'noopener');
-});
-$('modal').addEventListener('click', () => showEnd(false));
+});$('fin').addEventListener('click', () => showEnd(false));
 
 // fake cursor for unattended recordings: window.__cursor(x, y, click) in canvas pixels
 if (q.get('cursor') === '1') cv.classList.add('show-fc');
@@ -537,7 +592,7 @@ function fit() {
 addEventListener('resize', fit);
 if (q.get('clean') === '1') document.body.classList.add('clean');
 cv.classList.add('prov-slow');
-buildTiles('empty'); setCart(); fit();
+greet(); setCart(); fit();
 </script>
 </body>
 </html>

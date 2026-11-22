@@ -109,7 +109,7 @@ async function runGifts(req, res) {
   res.on('close', () => abort.abort());
   send({ type: 'start', provider: input.provider, label: provider.label, model: provider.model });
 
-  let text = '', pending = '', gifts = 0;
+  let text = '', pending = '', gifts = 0, usage = null, first = false;
   const emitLine = async raw => {
     const m = raw.trim().match(LINE);
     if (!m) return;
@@ -121,7 +121,7 @@ async function runGifts(req, res) {
     const r = await fetch(`${GATEWAY}/v1/chat/completions`, {
       method: 'POST', signal: abort.signal,
       headers: { 'content-type': 'application/json', authorization: `Bearer ${gatewayToken()}`, 'x-openclaw-model': provider.model },
-      body: JSON.stringify({ model: 'openclaw/santa', stream: true, messages: [{ role: 'user', content: giftPrompt(list) }] }),
+      body: JSON.stringify({ model: 'openclaw/santa', stream: true, stream_options: { include_usage: true }, messages: [{ role: 'user', content: giftPrompt(list) }] }),
     });
     if (!r.ok || !r.body) throw new Error(`gateway HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
     let sse = '';
@@ -135,15 +135,18 @@ async function runGifts(req, res) {
         if (data === '[DONE]') continue;
         let j; try { j = JSON.parse(data); } catch { continue; }
         if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+        // the gateway's last chunk carries the run's token usage (output includes reasoning)
+        if (j.usage) usage = { output: j.usage.completion_tokens, total: j.usage.total_tokens, reasoning: j.usage.completion_tokens_details?.reasoning_tokens ?? null };
         const delta = j.choices?.[0]?.delta?.content || '';
         if (!delta) continue;
+        if (!first) { first = true; send({ type: 'answer', ms: ms() }); }   // the reply has started streaming
         text += delta; pending += delta;
         let cut;
         while ((cut = pending.indexOf('\n')) >= 0) { await emitLine(pending.slice(0, cut)); pending = pending.slice(cut + 1); }
       }
     }
     if (pending.trim()) await emitLine(pending);
-    send({ type: 'done', ms: ms(), gifts, text });
+    send({ type: 'done', ms: ms(), gifts, text, usage });
   } catch (e) {
     if (!abort.signal.aborted) send({ type: 'error', ms: ms(), message: String(e.message || e), text });
   }

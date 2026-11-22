@@ -82,10 +82,10 @@ async function attempt(browser) {
   await sleep(900);
   let moon = null;
   if (a['cer-only']) {
-    await page.evaluate(l => { lastText = l; setQuery(l); }, LIST);
+    await page.evaluate(l => { lastText = l; }, LIST);
     moon = -1;
   } else {
-    await page.keyboard.press('/');
+    await clickEl(page, '#msg');
     await page.keyboard.type(LIST, { delay: 28 });
     await sleep(400);
     await page.keyboard.press('Enter');
@@ -94,12 +94,12 @@ async function attempt(browser) {
   let cer = null, failText = '';
   if (moon) {
     await sleep(1400);
-    await clickEl(page, '.seg .f');
+    await clickEl(page, '.opt.f');
     await sleep(800);
     await page.keyboard.press('Enter');   // resends the same list ("same list, resent")
     cer = await waitRun(page, 'fast', 45000);   // a Cerebras run slower than this is no use for the video
-    if (!cer) failText = await page.evaluate(() => document.getElementById('statusText').textContent).catch(() => '');
-    if (cer) { await sleep(2500); await page.keyboard.press('e'); await sleep(4000); }
+    if (!cer) failText = await page.evaluate(() => [...document.querySelectorAll('.st')].at(-1)?.textContent).catch(() => '');
+    if (cer) { await sleep(2500); await page.keyboard.press('e'); await sleep(8500); }   // the finale runs about 8 s
   }
   await cdp.send('Page.stopScreencast').catch(() => {});
   await sleep(300);
