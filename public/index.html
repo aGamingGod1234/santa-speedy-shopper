@@ -183,6 +183,7 @@ svg { display: block; }
 .prov-fast .stat b { color: #c4410f; }
 .trow { display: flex; justify-content: space-between; font-size: 12.5px; color: #444; margin-top: 6px; font-variant-numeric: tabular-nums; }
 .trow b { font-weight: 700; color: #0f1111; }
+.pk i { font-style: normal; } .pk b .pf { display: none; } .prov-fast .pk b .pf { display: inline; color: #c4410f; } .prov-fast .pk b .ps { display: none; }
 .spd { font-size: 10.5px; color: #8a8f94; margin-top: 6px; line-height: 1.35; }
 /* ---------- finale (E): Cerebras time, then the split vs Moonshot API, then the lockup ---------- */
 .fin { position: absolute; inset: 0; z-index: 20; display: none; overflow: hidden; background: #fff url(brand/grid.png) center / cover; font-family: Inter, system-ui, sans-serif; }
@@ -193,6 +194,9 @@ svg { display: block; }
 .fin .lg { margin: 10px 0 4px; transition: height .7s cubic-bezier(.7,0,.2,1); }
 .fin .tm { font-weight: 900; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
 .fin .what { font-size: 22px; font-weight: 700; color: #222; margin-top: 4px; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
+.fin .sub { font-size: 19px; font-weight: 600; color: #666; margin-top: 10px; font-variant-numeric: tabular-nums; transition: font-size .7s cubic-bezier(.7,0,.2,1); }
+.fin .sub em { font-style: normal; color: #f15a29; font-weight: 800; }
+.fin.split .sub { font-size: 15px; } .fin .L .sub { font-size: 15px; color: #888; }
 .fin .R { left: 0; width: 1280px; }
 .fin .R .lg { height: 70px; } .fin .R .tm { font-size: 260px; color: #f15a29; } .fin .R .on { font-size: 24px; }
 .fin.show .R .tm { animation: tmIn .6s cubic-bezier(.2,1.5,.4,1) both; }
@@ -205,7 +209,8 @@ svg { display: block; }
 .fin .x b { font-size: 46px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; } .fin .x span { font-size: 16px; font-weight: 700; }
 .fin.split .x { transform: translate(-50%, -50%) scale(1); }
 .fin .note { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #666; opacity: 0; transition: opacity .4s .8s; }
-.fin.split .note { opacity: 1; }`n.fin.lockup .x { transform: translate(-50%, -50%) scale(0); transition-delay: 0s; }
+.fin.split .note { opacity: 1; }
+.fin.lockup .x { transform: translate(-50%, -50%) scale(0); transition-delay: 0s; }
 .fin .lock { position: absolute; inset: 0; z-index: 3; background: #fff url(brand/grid.png) center / cover; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; opacity: 0; pointer-events: none; transition: opacity .5s; }
 .fin.lockup .lock { opacity: 1; }
 .fin .lock .row { display: flex; align-items: center; gap: 34px; }
@@ -288,15 +293,16 @@ svg { display: block; }
         <div class="stats"><div class="stat"><small>Time</small><b id="watch">0.0s</b></div><div class="stat"><small>Tokens/sec</small><b id="tps">–</b></div></div>
         <div class="trow"><span>Output tokens</span><b id="tokOut">–</b></div>
         <div class="trow"><span>Total tokens</span><b id="tokAll">–</b></div>
-        <div class="spd">Time: from sending your list to the last gift in the cart. Tokens/sec: output tokens over that time, tool calls included.</div>
+        <div class="trow pk"><span>Peak generation</span><b><i class="pf">1,427 tok/s</i><i class="ps">–</i></b></div>
+        <div class="spd">Time: from sending your list to the last gift in the cart. Tokens/sec: output tokens over that time, tool calls included. Peak: our best Speed Bounty run of this task on Cerebras, generation time only.</div>
       </div>
       <div class="card"><h4>Cart</h4><div class="trow" style="margin:0"><span id="cartItems">0 items</span><b id="cartTot">$0.00</b></div></div>
     </aside>
   </section>
 
   <div class="fin" id="fin">
-    <div class="pane L"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/moonshot_logo.svg" alt="Moonshot AI"><div class="on" style="font-size:17px">Moonshot API</div><div class="tm" id="fSlow"></div><div class="what" id="fSlowWhat"></div></div>
-    <div class="pane R"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/cerebras_logo.svg" alt="Cerebras"><div class="tm" id="fFast"></div><div class="what" id="fFastWhat"></div></div>
+    <div class="pane L"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/moonshot_logo.svg" alt="Moonshot AI"><div class="on" style="font-size:17px">Moonshot API</div><div class="tm" id="fSlow"></div><div class="what" id="fSlowWhat"></div><div class="sub" id="fSlowSub"></div></div>
+    <div class="pane R"><div class="on">Kimi K3.1 Pro on</div><img class="lg" src="brand/cerebras_logo.svg" alt="Cerebras"><div class="tm" id="fFast"></div><div class="what" id="fFastWhat"></div><div class="sub" id="fFastSub"></div></div>
     <div class="x"><b id="fX"></b><span>faster</span></div>
     <div class="note">Same list, same model, same app. Time from sending the list to every gift in the cart.</div>
     <div class="lock"><div class="row"><img src="brand/cerebras_logo.svg" alt="Cerebras"><span class="hair"></span><img class="k" src="brand/kimi_logo.svg" alt="Kimi"></div>
@@ -313,6 +319,7 @@ const CFG = {
   model: 'Kimi K3.1 Pro',
   providers: { slow: { id: 'moonshot', label: 'Moonshot API' }, fast: { id: 'cerebras', label: 'Cerebras' } },
   slots: 5,
+  peakTps: '1,427',   // best Speed Bounty session on Cerebras (mean decode tok/s, patched OpenClaw), session bench-1795316032823-57656
 };
 // real products from earlier live searches, for the home page shelf
 const SHELF = [
@@ -337,7 +344,7 @@ const ev = type => events.push({ type, t: Date.now() });
 
 let provider = 'slow', running = false, lastText = '', flipped = false, abortRun = null, aiMode = false, endShown = false;
 let runT0 = 0, runSec = 0, runRaf = 0, cards = [], cart = [];
-const times = { slow: null, fast: null };
+const times = { slow: null, fast: null }, outTok = { slow: null, fast: null };
 
 // ---------- sound ----------
 let soundOn = q.get('sound') !== '0';
@@ -484,7 +491,7 @@ async function send(text, resent) {
   cards.filter(c => !c.classList.contains('filled')).forEach(c => c.remove());
   setCart();
   if (err || !got) { setRunStatus(esc(err ? `Something went wrong: ${err}` : 'No gifts came back. Try again.'), 'err'); ev('error'); return; }
-  times[side] = sec;
+  times[side] = sec; outTok[side] = usage?.output ?? null;
   setTokens(usage, sec);
   setRunStatus(`✓ All ${got} gifts added to your cart in ${fmt(sec)}`, 'ok');
   ev('done:' + side); play('done');
@@ -514,6 +521,9 @@ function showEnd(on) {
   const main = f ?? s;
   $('fFast').textContent = fmt(main); $('fFastWhat').textContent = `to find all ${n} gifts`;
   $('fSlow').textContent = fmt(s); $('fSlowWhat').textContent = `to find all ${n} gifts`;
+  const tokTxt = side => outTok[side] != null ? outTok[side].toLocaleString() + ' output tokens' : '';
+  $('fFastSub').innerHTML = f != null ? [tokTxt('fast'), `peaks at <em>${CFG.peakTps} tok/s</em>`].filter(Boolean).join(' · ') : tokTxt('slow');
+  $('fSlowSub').textContent = tokTxt('slow');
   $('fX').textContent = f != null && s != null ? (s / f).toFixed(1) + '×' : '';
   void fin.offsetWidth; fin.classList.add('show');
   const both = f != null && s != null;
@@ -524,7 +534,7 @@ function resetAll() {
   abortRun?.abort(); running = false;
   if (rec) { rec.onend = null; rec.abort(); rec = null; }
   cv.classList.remove('listening');
-  times.slow = times.fast = null; lastText = ''; cart = []; flipped = false; msgIn.value = '';
+  times.slow = times.fast = outTok.slow = outTok.fast = null; lastText = ''; cart = []; flipped = false; msgIn.value = '';
   provider = 'slow'; cv.classList.add('prov-slow'); cv.classList.remove('prov-fast');
   aiMode = false; cv.classList.remove('ai-mode'); showEnd(false);
   clockT0 = performance.now(); drawClock();
