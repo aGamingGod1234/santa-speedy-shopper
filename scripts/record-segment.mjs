@@ -20,7 +20,7 @@ const { values: a } = parseArgs({ strict: true, options: {
   // only the switch and the Cerebras run, for swapping the fastest one into a hand-recorded take: the list sits in the
   // search bar unsent, then Cerebras is clicked and the same list is sent there
   'cer-only': { type: 'boolean', default: false },
-  sfx: { type: 'string', default: 'B' },   // the app's sound set: A Christmas, B checkout, C arcade
+  sfx: { type: 'string', default: 'store' },   // the app's sound set: store (default), or the older A, B, C
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
@@ -120,7 +120,7 @@ async function attempt(browser) {
       const at = Math.round(e.t - start);
       if (at < 0) continue;
       // the page logs every sound it plays with its file, pitch (playback rate) and volume
-      if (e.file) { ins.push('-i', join(sfxDir, `${e.file}.mp3`)); parts.push({ at, vol: e.vol, rate: e.rate || 1 }); }
+      if (e.file) { ins.push('-i', join(sfxDir, e.file)); parts.push({ at, vol: e.vol, rate: e.rate || 1 }); }
     }
     const args = ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, ...ins];
     if (parts.length) {

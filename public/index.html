@@ -291,23 +291,27 @@ const times = { slow: null, fast: null };
 
 // ---------- sound ----------
 let soundOn = q.get('sound') !== '0';
-// three sets (?sfx=A|B|C); files are trimmed to start instantly and leveled to the same loudness
+// UI sounds: the default set is synthesized store cues (tools/make-sfx.mjs); ?sfx=A|B|C picks the older sample sets
 const SETS = {
-  A: { switch: 'whoosh2', add: 'sleigh', done: 'magicbell' },   // Christmas
-  B: { switch: 'whoosh2', add: 'pop', done: 'chaching' },       // checkout
-  C: { switch: 'whoosh1', add: 'coin', done: 'purchase' },      // arcade
+  STORE: { tap: 'ui-tap.wav', switch: 'ui-switch.wav', add: 'ui-add.wav', done: 'ui-done.wav' },
+  A: { switch: 'whoosh2.mp3', add: 'sleigh.mp3', done: 'magicbell.mp3' },   // Christmas
+  B: { switch: 'whoosh2.mp3', add: 'pop.mp3', done: 'chaching.mp3' },       // checkout
+  C: { switch: 'whoosh1.mp3', add: 'coin.mp3', done: 'purchase.mp3' },      // arcade
 };
-const SET = SETS[(q.get('sfx') || 'B').toUpperCase()] || SETS.B;
-const VOL = { switch: .7, add: .8, done: 1 };
+const SET = SETS[(q.get('sfx') || 'STORE').toUpperCase()] || SETS.STORE;
+const VOL = { tap: .6, switch: .8, add: .85, done: 1 };
 let actx = null; const bufs = {};
 async function loadSfx() {   // WebAudio plays on time even when sounds overlap; the context starts on the first key or click
   actx = actx || new AudioContext();
-  await Promise.all(Object.values(SET).map(async n => { if (!bufs[n]) bufs[n] = await actx.decodeAudioData(await (await fetch(`sfx/${n}.mp3`)).arrayBuffer()); }));
+  await Promise.all(Object.values(SET).map(async n => { if (!bufs[n]) bufs[n] = await actx.decodeAudioData(await (await fetch(`sfx/${n}`)).arrayBuffer()); }));
 }
+loadSfx().catch(() => {});   // decoding works before any click; the browser only lets the context play after one
 ['keydown', 'pointerdown'].forEach(t => addEventListener(t, () => { loadSfx().then(() => actx.resume()).catch(() => {}); }, { capture: true }));
 // each gift in a run plays a whole step higher than the last, so the five land as a rising run
 function play(kind, step = 0) {
-  const file = SET[kind], rate = Math.pow(2, step * 2 / 12), vol = VOL[kind];
+  const file = SET[kind];
+  if (!file) return;
+  const rate = Math.pow(2, step * 2 / 12), vol = VOL[kind];
   events.push({ type: kind, file, rate, vol, t: Date.now() });
   if (!soundOn || !actx || !bufs[file]) return;
   const s = actx.createBufferSource(), g = actx.createGain();
@@ -336,7 +340,7 @@ $('shelf').innerHTML = `
   <div class="box"><h3>Cozy reads</h3><div class="two">${tile(SHELF[4])}${tile(SHELF[3])}</div><div class="more">See more</div></div>
   <div class="box aibox" id="aiBox"><h3>✨ New: AI Shopper</h3><p>Out of time? Say who you're buying for and let the AI do the shopping.</p>
     <div class="demo"><i>Try saying</i>"my mom loves coffee, my dad is into music…"</div><div class="btn">Start shopping with AI</div></div>`;
-function openAI() { if (aiMode) return; aiMode = true; cv.classList.add('ai-mode'); ev('openAI'); }
+function openAI() { if (aiMode) return; aiMode = true; cv.classList.add('ai-mode'); ev('openAI'); play('tap'); }
 $('aiTab').onclick = openAI; $('heroCta').onclick = openAI; $('aiBox').onclick = openAI;
 
 // ---------- search bar text ----------
