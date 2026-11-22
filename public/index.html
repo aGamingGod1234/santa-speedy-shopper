@@ -291,11 +291,29 @@ const times = { slow: null, fast: null };
 
 // ---------- sound ----------
 let soundOn = q.get('sound') !== '0';
-const SFX = {}; for (const k of ['send', 'add', 'done', 'switch', 'tick']) { SFX[k] = new Audio(`sfx/${k}.${k === 'done' ? 'wav' : 'mp3'}`); SFX[k].preload = 'auto'; }
-const VOL = { send: .5, add: .7, done: .9, switch: .6, tick: .28 };
-SFX.tick.loop = true;
-function play(k) { ev(k); if (!soundOn) return; const a = k === 'tick' ? SFX.tick : SFX[k].cloneNode(); a.volume = VOL[k]; a.currentTime = 0; a.play().catch(() => {}); }
-function stopTick() { ev('tickStop'); SFX.tick.pause(); }
+// three sets (?sfx=A|B|C); files are trimmed to start instantly and leveled to the same loudness
+const SETS = {
+  A: { switch: 'whoosh2', add: 'sleigh', done: 'magicbell' },   // Christmas
+  B: { switch: 'whoosh2', add: 'pop', done: 'chaching' },       // checkout
+  C: { switch: 'whoosh1', add: 'coin', done: 'purchase' },      // arcade
+};
+const SET = SETS[(q.get('sfx') || 'B').toUpperCase()] || SETS.B;
+const VOL = { switch: .7, add: .8, done: 1 };
+let actx = null; const bufs = {};
+async function loadSfx() {   // WebAudio plays on time even when sounds overlap; the context starts on the first key or click
+  actx = actx || new AudioContext();
+  await Promise.all(Object.values(SET).map(async n => { if (!bufs[n]) bufs[n] = await actx.decodeAudioData(await (await fetch(`sfx/${n}.mp3`)).arrayBuffer()); }));
+}
+['keydown', 'pointerdown'].forEach(t => addEventListener(t, () => { loadSfx().then(() => actx.resume()).catch(() => {}); }, { capture: true }));
+// each gift in a run plays a whole step higher than the last, so the five land as a rising run
+function play(kind, step = 0) {
+  const file = SET[kind], rate = Math.pow(2, step * 2 / 12), vol = VOL[kind];
+  events.push({ type: kind, file, rate, vol, t: Date.now() });
+  if (!soundOn || !actx || !bufs[file]) return;
+  const s = actx.createBufferSource(), g = actx.createGain();
+  s.buffer = bufs[file]; s.playbackRate.value = rate; g.gain.value = vol;
+  s.connect(g).connect(actx.destination); s.start();
+}
 
 // ---------- Christmas Eve clock (story) ----------
 const fixed = q.get('clock'); const [ch, cm, cs] = (fixed || '0:0:0').split(':').map(Number);
@@ -363,7 +381,7 @@ function fill(g) {
   cart.push(g); setCart();
   restart($('cart'), 'bump');
   const pl = $('plus'); pl.textContent = '+' + money(n); restart(pl, 'show');
-  play('add');
+  play('add', cart.length - 1);
   const left = CFG.slots - cards.filter(c => c.classList.contains('filled')).length;
   if (left > 0) setStatus(`Added a gift for ${g.who}. ${left} to go…`, 'busy');
 }
@@ -384,7 +402,7 @@ async function send(text, resent) {
   running = true; cart = [];
   buildTiles('wait'); setCart();
   setStatus(`${CFG.model} on ${CFG.providers[side].label} is searching real stores…`, 'busy');
-  ev('send:' + side); play('send'); setTimeout(() => running && play('tick'), 350);
+  ev('send:' + side);
   startWatch();
   const ctrl = new AbortController(); abortRun = ctrl;
   let got = 0, err = null;
@@ -405,7 +423,7 @@ async function send(text, resent) {
       }
     }
   } catch (e) { if (!ctrl.signal.aborted) err = String(e.message || e); }
-  running = false; stopTick();
+  running = false;
   if (ctrl.signal.aborted) return;
   const sec = (performance.now() - runT0) / 1000;
   stopWatch(sec);
@@ -417,7 +435,7 @@ async function send(text, resent) {
   ev('done:' + side); play('done');
 }
 function flipProvider() {
-  if (running) { abortRun?.abort(); running = false; stopTick(); }
+  if (running) { abortRun?.abort(); running = false; }
   provider = provider === 'fast' ? 'slow' : 'fast';
   cv.classList.toggle('prov-fast', provider === 'fast'); cv.classList.toggle('prov-slow', provider !== 'fast');
   restart($('seg'), 'flash'); play('switch');
@@ -439,7 +457,7 @@ function showEnd(on) {
 }
 
 function resetAll() {
-  abortRun?.abort(); running = false; stopTick();
+  abortRun?.abort(); running = false;
   if (rec) { rec.onend = null; rec.abort(); rec = null; }
   typing = null; cv.classList.remove('listening');
   times.slow = times.fast = null; lastText = ''; cart = []; flipped = false;

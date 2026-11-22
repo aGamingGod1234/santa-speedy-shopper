@@ -20,13 +20,13 @@ const { values: a } = parseArgs({ strict: true, options: {
   // only the switch and the Cerebras run, for swapping the fastest one into a hand-recorded take: the list sits in the
   // search bar unsent, then Cerebras is clicked and the same list is sent there
   'cer-only': { type: 'boolean', default: false },
+  sfx: { type: 'string', default: 'B' },   // the app's sound set: A Christmas, B checkout, C arcade
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
 const FFMPEG = process.env.FFMPEG || 'C:/Users/User/tools/asr/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v9.0.2.exe';
-const APP = 'http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00';
+const APP = `http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00&sfx=${a.sfx}`;
 const LIST = 'my mom loves coffee, my dad is into music, my sister climbs, my brother games, and grandma reads mystery novels';
-const SFX = { send: ['send.mp3', 0.5], add: ['add.mp3', 0.7], done: ['done.wav', 0.9], switch: ['switch.mp3', 0.6] };
 const sfxDir = join(root, 'public', 'sfx');
 const outDir = join(root, 'recordings');
 const log = join(outDir, 'segments.log');
@@ -119,16 +119,13 @@ async function attempt(browser) {
     for (const e of events) {
       const at = Math.round(e.t - start);
       if (at < 0) continue;
-      if (SFX[e.type]) { ins.push('-i', join(sfxDir, SFX[e.type][0])); parts.push({ at, vol: SFX[e.type][1] }); }
-      if (e.type === 'tick') {   // looped tick until the run ends
-        const stop = events.find(x => x.type === 'tickStop' && x.t > e.t)?.t ?? end;
-        ins.push('-stream_loop', '-1', '-i', join(sfxDir, 'tick.mp3'));
-        parts.push({ at, vol: 0.28, dur: (stop - e.t) / 1000 });
-      }
+      // the page logs every sound it plays with its file, pitch (playback rate) and volume
+      if (e.file) { ins.push('-i', join(sfxDir, `${e.file}.mp3`)); parts.push({ at, vol: e.vol, rate: e.rate || 1 }); }
     }
     const args = ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, ...ins];
     if (parts.length) {
-      const fl = parts.map((p, i) => `[${i + 1}:a]${p.dur ? `atrim=0:${p.dur.toFixed(2)},` : ''}volume=${p.vol},adelay=${p.at}|${p.at}[a${i}]`).join(';')
+      // playback rate = resample, like the browser does (pitch and speed together)
+      const fl = parts.map((p, i) => `[${i + 1}:a]aresample=44100,${p.rate !== 1 ? `asetrate=${Math.round(44100 * p.rate)},aresample=44100,` : ''}volume=${p.vol},adelay=${p.at}|${p.at}[a${i}]`).join(';')
         + `;${parts.map((_, i) => `[a${i}]`).join('')}amix=inputs=${parts.length}:normalize=0:duration=longest,atrim=0:${((end - start) / 1000).toFixed(2)}[aout]`;
       args.push('-filter_complex', fl, '-map', '0:v', '-map', '[aout]', '-c:a', 'aac', '-b:a', '192k');
     }
