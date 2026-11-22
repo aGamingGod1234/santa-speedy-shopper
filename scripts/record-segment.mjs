@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Records the real app (standard OpenClaw, no speed patch) doing the video's screen segment, unattended:
-// fresh page, the list sent on Moonshot API, S to flip to Cerebras, Enter to resend the same list, E for the end card.
-// Each attempt becomes its own clip, recordings/seg-<SGT time>-moon<s>-cer<s>.mp4 (1620x1440, 30 fps, H.264),
-// so the fastest Cerebras take can be swapped into the edit at any time. Every number on screen comes from that run.
-// Usage: node scripts/record-segment.mjs [--good 3] [--max-cer 10] [--attempts 12] [--until 2026-11-22T19:30+08:00] [--gap-sec 60]
+// home page, click AI Shopper, type the list, Moonshot API run, click Cerebras, resend the same list, order summary.
+// Each attempt becomes its own 4K clip (3840x2160, 30 fps, H.264, with the app's sound effects mixed in at the moments
+// they played): recordings/seg-<SGT time>-moon<s>-cer<s>.mp4. Every product, price, store and time comes from that run;
+// only the shop clock is set (?clock=23:58:00), as the skit's story time.
+// Usage: node scripts/record-segment.mjs [--good 3] [--max-cer 10] [--attempts 12] [--until 2026-11-22T21:30+08:00] [--gap-sec 45]
 // Needs the app server (npm start) and the standard gateway running, Playwright + Edge, and ffmpeg (FFMPEG env or the asr venv copy).
 import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync, rmSync, appendFileSync } from 'node:fs';
@@ -15,13 +16,15 @@ import { parseArgs } from 'node:util';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const { values: a } = parseArgs({ strict: true, options: {
   good: { type: 'string', default: '3' }, 'max-cer': { type: 'string', default: '10' }, attempts: { type: 'string', default: '12' },
-  until: { type: 'string', default: '2026-11-22T19:30+08:00' }, 'gap-sec': { type: 'string', default: '60' },
+  until: { type: 'string', default: '2026-11-22T21:30+08:00' }, 'gap-sec': { type: 'string', default: '45' },
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
 const FFMPEG = process.env.FFMPEG || 'C:/Users/User/tools/asr/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v9.0.2.exe';
-const APP = 'http://127.0.0.1:3000/?clean=1&countdown=1';
+const APP = 'http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00';
 const LIST = 'my mom loves coffee, my dad is into music, my sister climbs, my brother games, and grandma reads mystery novels';
+const SFX = { send: ['send.mp3', 0.5], add: ['add.mp3', 0.7], done: ['done.wav', 0.9], switch: ['switch.mp3', 0.6] };
+const sfxDir = join(root, 'public', 'sfx');
 const outDir = join(root, 'recordings');
 const log = join(outDir, 'segments.log');
 mkdirSync(outDir, { recursive: true });
@@ -41,11 +44,22 @@ async function waitRun(page, side, timeoutMs = 150000) {
   return null;
 }
 
+// glide the drawn cursor (the screencast has no OS cursor) to an element, then click it for real
+async function clickEl(page, sel) {
+  const b = await page.locator(sel).boundingBox();
+  const x = b.x + b.width / 2, y = b.y + b.height / 2;
+  await page.evaluate(([x, y]) => __cursor(x, y), [x, y]);
+  await sleep(650);
+  await page.evaluate(([x, y]) => __cursor(x, y, true), [x, y]);
+  await page.mouse.click(x, y);
+}
+
 async function attempt(browser) {
-  const ctx = await browser.newContext({ viewport: { width: 1080, height: 960 }, deviceScaleFactor: 1.5 });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 3 });
   const page = await ctx.newPage();
   await page.goto(APP);
   await page.waitForLoadState('networkidle');
+  await page.evaluate(() => __cursor(900, 520));
   await sleep(1500);
   const frameDir = join(outDir, `.frames-${Date.now()}`);
   mkdirSync(frameDir);
@@ -57,22 +71,29 @@ async function attempt(browser) {
     frames.push({ file, t: f.metadata.timestamp });
     cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
   });
-  // without maxWidth/maxHeight the frames come at CSS size (1080x960) instead of device pixels
-  await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 95, maxWidth: 1620, maxHeight: 1440, everyNthFrame: 1 });
-  await sleep(1200);
-  await page.evaluate(l => { showText(l); send(l, false); }, LIST);   // same as typing the list and pressing Enter
+  // without maxWidth/maxHeight the frames come at CSS size instead of device pixels
+  await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: 3840, maxHeight: 2160, everyNthFrame: 1 });
+  await sleep(1500);
+  await clickEl(page, '#aiTab');
+  await sleep(900);
+  await page.keyboard.press('/');
+  await page.keyboard.type(LIST, { delay: 28 });
+  await sleep(400);
+  await page.keyboard.press('Enter');
   const moon = await waitRun(page, 'slow');
-  let cer = null;
+  let cer = null, failText = '';
   if (moon) {
-    await sleep(1500);
-    await page.keyboard.press('s');
-    await sleep(700);
-    await page.keyboard.press('Enter');
+    await sleep(1400);
+    await clickEl(page, '.seg .f');
+    await sleep(800);
+    await page.keyboard.press('Enter');   // resends the same list ("same list, resent")
     cer = await waitRun(page, 'fast');
-    if (cer) { await sleep(2200); await page.keyboard.press('e'); await sleep(3500); }
+    if (!cer) failText = await page.evaluate(() => document.getElementById('statusText').textContent).catch(() => '');
+    if (cer) { await sleep(2500); await page.keyboard.press('e'); await sleep(4000); }
   }
   await cdp.send('Page.stopScreencast').catch(() => {});
   await sleep(300);
+  const events = await page.evaluate(() => window.__events).catch(() => []);
   await ctx.close();
   let clip = null;
   if (moon && cer && frames.length > 10) {
@@ -82,12 +103,32 @@ async function attempt(browser) {
     const listFile = join(frameDir, 'list.txt');
     writeFileSync(listFile, list);
     clip = join(outDir, `seg-${sgt()}-moon${moon.toFixed(1)}-cer${cer.toFixed(1)}.mp4`);
-    execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, '-vf', 'fps=30,scale=in_range=pc:out_range=tv,format=yuv420p', '-color_range', 'tv',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-movflags', '+faststart', clip]);
+    // sound effects at the moments the page played them (event times and frame times share the wall clock)
+    const start = frames[0].t * 1000, end = frames.at(-1).t * 1000;
+    const ins = [], parts = [];
+    for (const e of events) {
+      const at = Math.round(e.t - start);
+      if (at < 0) continue;
+      if (SFX[e.type]) { ins.push('-i', join(sfxDir, SFX[e.type][0])); parts.push({ at, vol: SFX[e.type][1] }); }
+      if (e.type === 'tick') {   // looped tick until the run ends
+        const stop = events.find(x => x.type === 'tickStop' && x.t > e.t)?.t ?? end;
+        ins.push('-stream_loop', '-1', '-i', join(sfxDir, 'tick.mp3'));
+        parts.push({ at, vol: 0.28, dur: (stop - e.t) / 1000 });
+      }
+    }
+    const args = ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, ...ins];
+    if (parts.length) {
+      const fl = parts.map((p, i) => `[${i + 1}:a]${p.dur ? `atrim=0:${p.dur.toFixed(2)},` : ''}volume=${p.vol},adelay=${p.at}|${p.at}[a${i}]`).join(';')
+        + `;${parts.map((_, i) => `[a${i}]`).join('')}amix=inputs=${parts.length}:normalize=0:duration=longest,atrim=0:${((end - start) / 1000).toFixed(2)}[aout]`;
+      args.push('-filter_complex', fl, '-map', '0:v', '-map', '[aout]', '-c:a', 'aac', '-b:a', '192k');
+    }
+    args.push('-vf', 'fps=30,scale=in_range=pc:out_range=tv,format=yuv420p', '-color_range', 'tv',
+      '-c:v', 'libx264', '-preset', 'medium', '-crf', '16', '-movflags', '+faststart', clip);
+    execFileSync(FFMPEG, args);
   }
   const span = frames.length > 1 ? frames.at(-1).t - frames[0].t : 0;
   rmSync(frameDir, { recursive: true, force: true });
-  return { moon, cer, clip, fps: span ? (frames.length / span).toFixed(1) : '-' };
+  return { moon, cer, clip, failText, fps: span ? (frames.length / span).toFixed(1) : '-' };
 }
 
 const until = Date.parse(a.until);
@@ -99,7 +140,7 @@ for (let i = 1; i <= Number(a.attempts) && good < Number(a.good) && Date.now() <
     const r = await attempt(browser);
     const ok = r.cer != null && r.cer <= Number(a['max-cer']);
     if (ok) good++;
-    note(`attempt ${i}: moonshot ${r.moon?.toFixed(1) ?? 'failed'}s | cerebras ${r.cer?.toFixed(1) ?? 'failed'}s | ${r.fps} captured fps | ${ok ? 'GOOD' : 'slow'} ${r.clip ? r.clip : '(no clip)'}`);
+    note(`attempt ${i}: moonshot ${r.moon?.toFixed(1) ?? 'failed'}s | cerebras ${r.cer?.toFixed(1) ?? 'failed'}s | ${r.fps} captured fps | ${ok ? 'GOOD' : 'slow'} ${r.clip ? r.clip : '(no clip)'}${r.failText ? ' | ' + r.failText : ''}`);
   } catch (e) { note(`attempt ${i}: error ${e.message.split('\n')[0]}`); }
 }
 await browser.close();
