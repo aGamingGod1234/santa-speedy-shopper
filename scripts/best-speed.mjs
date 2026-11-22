@@ -15,7 +15,7 @@ const runs = [];
 for (const f of readdirSync(logs).filter(f => /^speed-.*\.json$/.test(f))) {
   const j = JSON.parse(readFileSync(join(logs, f), 'utf8'));
   for (const r of j.results) {
-    const started = Number(r.sessionKey?.split('bench-')[1]) || 0;
+    const started = parseInt(r.sessionKey?.split('bench-')[1], 10) || 0;
     if (r.valid && started >= since) runs.push({ ...r, label: j.label, thinking: j.thinking, file: f });
   }
 }

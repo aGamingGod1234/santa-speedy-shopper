@@ -30,6 +30,7 @@ Results so far: naive prompt 570; fast prompt median ~845, best 1,239.5 (34 runs
   fresh session per run, and scores each run exactly like the patch's readout. A run is OK only with 5 distinct links,
   all copied from the search tool output. Logs: `logs/speed-*.json`.
 - `node scripts/best-speed.mjs` lists the best valid runs across all batches and the best session key.
+- `scripts/speed-swarm.ps1` runs 4 parallel workers until Sun 22 Nov 20:00 SGT (about 15K uncached TPM, under the 50K limit), each backing off 60 s after a high-traffic 429.
 - `scripts/speed-farm.ps1` runs a batch every 30 min until Sun 22 Nov 20:00 SGT, restarting the gateway if needed.
   Log: `logs/speed-farm.log`. Stop it by creating `logs/speed-farm.stop`.
 - `powershell -ExecutionPolicy Bypass -File scripts\open-best.ps1` opens the best session in the patched web chat.

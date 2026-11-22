@@ -3,7 +3,7 @@
 // It searches Shop MCP (keyless Shopify catalog) for every person in parallel in ONE tool call,
 // and returns a compact list, so the agent needs one round trip and the next turn stays small.
 import { createInterface } from 'node:readline';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -95,7 +95,11 @@ async function findGifts({ people = [] }) {
   try {
     mkdirSync(LOG_DIR, { recursive: true });
     const at = new Date().toISOString();
-    writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at, urls: products.map(r => r.url) }));
+    // cumulative (newest 5000), so parallel runs don't overwrite each other's record
+    let seen = [];
+    try { seen = JSON.parse(readFileSync(join(LOG_DIR, 'last-urls.json'), 'utf8')).urls || []; } catch {}
+    const urls = [...new Set([...products.map(r => r.url), ...seen])].slice(0, 5000);
+    writeFileSync(join(LOG_DIR, 'last-urls.json'), JSON.stringify({ at, urls }));
     writeFileSync(join(LOG_DIR, 'last-results.json'), JSON.stringify({ at, products }));
   } catch {}
   // images are a third of the payload and the model never uses them, so they stay out of the model's context

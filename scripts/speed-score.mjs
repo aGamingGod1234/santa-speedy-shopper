@@ -21,8 +21,11 @@ const { values: args } = parseArgs({
     'gap-ms': { type: 'string', default: '5000' },
     'prompt-file': { type: 'string', default: join(root, 'prompts', 'santa.txt') },
     label: { type: 'string' },
+    // stop starting new runs after this time (e.g. 2026-11-22T20:00+08:00), for long unattended workers
+    until: { type: 'string' },
   },
 });
+const until = args.until ? Date.parse(args.until) : Infinity;
 const OC = join(process.env.OPENCLAW_SPEED_DIR || 'C:/Users/User/openclaw-speed', 'openclaw.mjs');
 const NODE = process.env.NODE_SPEED || 'C:/Users/User/tools/node24/node.exe';
 const prompt = readFileSync(args['prompt-file'], 'utf8').trim();
@@ -69,9 +72,9 @@ const results = [];
 mkdirSync(join(root, 'logs'), { recursive: true });
 const logFile = join(root, 'logs', `speed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
 const save = () => writeFileSync(logFile, JSON.stringify({ thinking: args.thinking, model: args.model, label: args.label || null, results }, null, 2));
-for (let i = 0; i < Number(args.runs); i++) {
+for (let i = 0; i < Number(args.runs) && Date.now() < until; i++) {
   if (i > 0) await new Promise(r => setTimeout(r, Number(args['gap-ms'])));
-  const sessionKey = `agent:santa:bench-${Date.now()}`;
+  const sessionKey = `agent:santa:bench-${Date.now()}-${process.pid}`; // pid keeps parallel workers apart
   const t0 = performance.now();
   const run = await oc(['agent', '--session-key', sessionKey, '--model', args.model, '--thinking', args.thinking, '-m', prompt, '--json']);
   const wallMs = Math.round(performance.now() - t0);
@@ -88,6 +91,9 @@ for (let i = 0; i < Number(args.runs); i++) {
     error: s.mean === null ? `no server timing (run exit ${run.code}: ${(run.err || hist.err).split('\n').filter(l => l.trim() && !/startup phase/.test(l)).slice(-3).join(' | ')})` : undefined };
   results.push(r);
   save(); // after every run, so an interrupted batch keeps its results
+  // rate-limited or queue-full (shows as an error, or as OpenClaw's "needs a short break" reply mid-run):
+  // back off instead of adding to the queue
+  if (/429|rate.?limit|queue|high traffic|short break/i.test(`${r.error || ''} ${r.text || ''}`)) await new Promise(res => setTimeout(res, 60000));
   if (r.error) console.log(`run ${i + 1}: ERROR ${r.error}`);
   else console.log(`run ${i + 1}: SCORE ${r.mean} tok/s mean | per call ${r.rates.join(', ')} | tokens ${s.calls.map(c => c.out).join('+')} | ${wallMs}ms wall | ${valid ? 'OK' : `INVALID (${links} links, ${unknown.length} not from search)`}`);
 }
