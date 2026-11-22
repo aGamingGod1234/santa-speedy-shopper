@@ -442,7 +442,8 @@ const real = q.get('clock') === 'real';
 const start = (q.get('clock') && !real ? q.get('clock') : `23:59:${10 + Math.floor(Math.random() * 16)}`).split(':').map(Number);
 const [ch, cm, cs] = start;
 let clockT0 = null;
-const startClock = () => { if (clockT0 == null) clockT0 = performance.now(); };
+// Alt+Tab, F5 and other shortcut keys don't start it, so switching windows between takes leaves it frozen
+const startClock = e => { if (clockT0 != null || (e.type === 'keydown' && (e.altKey || e.ctrlKey || e.metaKey || /^(Alt|Tab|Control|Meta|Shift|Fd+)$/.test(e.key)))) return; clockT0 = performance.now(); };
 ['pointermove', 'pointerdown', 'keydown'].forEach(t => addEventListener(t, startClock, { capture: true, passive: true }));
 function drawClock() {
   const now = new Date();
