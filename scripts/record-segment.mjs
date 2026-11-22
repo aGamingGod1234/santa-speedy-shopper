@@ -21,11 +21,13 @@ const { values: a } = parseArgs({ strict: true, options: {
   // search bar unsent, then Cerebras is clicked and the same list is sent there
   'cer-only': { type: 'boolean', default: false },
   sfx: { type: 'string', default: 'store' },   // the app's sound set: store (default), or the older A, B, C
+  tall: { type: 'boolean', default: false },   // the app's 720x1280 portrait layout, recorded at 2160x3840 for 9:16 video
 } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_DIR || join(process.env.TEMP, 'santa-kit-render', 'node_modules', 'playwright'));
 const FFMPEG = process.env.FFMPEG || 'C:/Users/User/tools/asr/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v9.0.2.exe';
-const APP = `http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00&sfx=${a.sfx}`;
+const APP = `http://127.0.0.1:3000/?clean=1&cursor=1&sound=0&clock=23:58:00&sfx=${a.sfx}${a.tall ? '&tall=1' : ''}`;
+const [VW, VH] = a.tall ? [2160, 3840] : [3840, 2160];   // 3x the app's canvas either way
 const LIST = 'my mom loves coffee, my dad is into music, my sister climbs, my brother games, and grandma reads mystery novels';
 const sfxDir = join(root, 'public', 'sfx');
 const outDir = join(root, 'recordings');
@@ -59,11 +61,11 @@ async function clickEl(page, sel) {
 
 async function attempt(browser) {
   // a 4K viewport: the app scales its 1280x720 canvas 3x, so text and images render sharp (the screencast ignores deviceScaleFactor)
-  const ctx = await browser.newContext({ viewport: { width: 3840, height: 2160 } });
+  const ctx = await browser.newContext({ viewport: { width: VW, height: VH } });
   const page = await ctx.newPage();
   await page.goto(APP);
   await page.waitForLoadState('networkidle');
-  await page.evaluate(() => __cursor(900, 520));
+  await page.evaluate(t => __cursor(t ? 520 : 900, t ? 760 : 520), a.tall);
   await sleep(1500);
   const frameDir = join(outDir, `.frames-${Date.now()}`);
   mkdirSync(frameDir);
@@ -76,7 +78,7 @@ async function attempt(browser) {
     cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
   });
   // without maxWidth/maxHeight the frames come at CSS size instead of device pixels
-  await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: 3840, maxHeight: 2160, everyNthFrame: 1 });
+  await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: VW, maxHeight: VH, everyNthFrame: 1 });
   await sleep(1500);
   await clickEl(page, '#aiTab');
   await sleep(900);
@@ -112,7 +114,7 @@ async function attempt(browser) {
       + `\nfile '${frames.at(-1).file.replace(/\\/g, '/')}'\n`;
     const listFile = join(frameDir, 'list.txt');
     writeFileSync(listFile, list);
-    clip = join(outDir, `seg-${sgt()}${moon > 0 ? '-moon' + moon.toFixed(1) : ''}-cer${cer ? cer.toFixed(1) : 'failed'}.mp4`);
+    clip = join(outDir, `seg-${sgt()}${a.tall ? '-tall' : ''}${moon > 0 ? '-moon' + moon.toFixed(1) : ''}-cer${cer ? cer.toFixed(1) : 'failed'}.mp4`);
     // sound effects at the moments the page played them (event times and frame times share the wall clock)
     const start = frames[0].t * 1000, end = frames.at(-1).t * 1000;
     const ins = [], parts = [];

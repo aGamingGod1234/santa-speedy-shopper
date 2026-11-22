@@ -223,6 +223,44 @@ svg { display: block; }
 .fin.lockup .lock h2 { animation: up .5s .35s ease both; } .fin.lockup .lock p { animation: up .5s .5s ease both; }
 @keyframes up { from { transform: translateY(14px); opacity: 0; } }
 
+/* ---------- portrait 720x1280 (?tall=1): fills a 9:16 frame for vertical video ---------- */
+.tall { width: 720px; height: 1280px; }
+.tall .nav { gap: 12px; padding: 0 14px; }
+.tall .logo small { display: none; }
+.tall .cats a:nth-child(2), .tall .cats a:nth-child(3), .tall .cats a:nth-child(4), .tall .cats a:nth-child(5) { display: none; }
+.tall .hero { height: 486px; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 40px; }
+.tall .hero h1 { font-size: 46px; }
+.tall .hero .snow { position: static; margin-top: 26px; }
+.tall .hero .snow div { width: 190px; height: 170px; }
+.tall .shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.tall .box { height: 300px; }
+.tall .aip { height: 1172px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); padding: 12px 14px 10px; gap: 10px; }
+.tall .side { order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tall .side .cartc { display: none; }
+.tall .spdc { grid-column: 1 / -1; display: grid; grid-template-columns: 1.3fr 1fr; column-gap: 20px; align-items: center; }
+.tall .spdc h4, .tall .spdc .spd { grid-column: 1 / -1; }
+.tall .spdc .stats { grid-column: 1; grid-row: 2 / 5; }
+.tall .spdc .trow { grid-column: 2; margin-top: 3px; }
+.tall .stat b { font-size: 40px; }
+.tall .gifts { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+.tall .g { height: 90px; display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; grid-template-rows: 18px 24px 1fr; grid-template-areas: "img for pr" "img ti pr" "img so btn"; column-gap: 12px; padding: 6px 10px 6px 6px; }
+.tall .g .img { grid-area: img; height: 78px; margin: 0; } .tall .g .img img { max-height: 70px; }
+.tall .g .for { grid-area: for; align-self: end; }
+.tall .g .ti { grid-area: ti; font-size: 15px; line-height: 22px; -webkit-line-clamp: 1; min-height: 0; font-weight: 600; }
+.tall .g .pr { grid-area: pr; margin: 0; font-size: 21px; text-align: right; align-self: center; }
+.tall .g .so { grid-area: so; font-size: 11.5px; align-self: start; margin-top: 2px; }
+.tall .g .btn { grid-area: btn; margin: 0; padding: 0 12px; align-self: end; }
+.tall .g .ti .sk { display: inline-block; }
+.tall .fin .R { width: 720px; } .tall .fin .R .tm { font-size: 230px; }
+.tall .fin .L { left: -360px; width: 360px; } .tall .fin.split .L { left: 0; }
+.tall .fin.split .R { left: 360px; width: 360px; }
+.tall .fin.split .R .tm, .tall .fin .L .tm { font-size: 112px; }
+.tall .fin .what { font-size: 19px; } .tall .fin.split .sub, .tall .fin .L .sub { font-size: 13.5px; padding: 0 14px; }
+.tall .fin .x { left: 360px; top: 820px; width: 136px; height: 136px; }
+.tall .fin .note { height: 110px; padding: 0 60px; text-align: center; }
+.tall .fin .lock .row img { height: 62px; } .tall .fin .lock .row img.k { height: 52px; } .tall .fin .lock .hair { height: 62px; }
+.tall .fin .lock h2 { font-size: 40px; text-align: center; line-height: 1.15; max-width: 560px; }
+.st .el { margin-left: auto; font-weight: 700; color: #6b7070; font-variant-numeric: tabular-nums; }
 /* fake cursor for unattended recordings (?cursor=1): the screencast has no OS cursor */
 .fc { position: absolute; z-index: 30; left: 0; top: 0; pointer-events: none; display: none; transition: transform .45s cubic-bezier(.3,.1,.2,1); }
 .show-fc .fc { display: block; }
@@ -289,14 +327,14 @@ svg { display: block; }
         <div class="opt s" data-p="slow"><span class="rd"></span><div class="nm">Moonshot API<small>Kimi's own API</small></div></div>
         <div class="opt f" data-p="fast"><span class="rd"></span><div class="nm">Cerebras<small>Cerebras inference</small></div></div>
       </div>
-      <div class="card"><h4>Speed</h4>
+      <div class="card spdc"><h4>Speed</h4>
         <div class="stats"><div class="stat"><small>Time</small><b id="watch">0.0s</b></div><div class="stat"><small>Tokens/sec</small><b id="tps">–</b></div></div>
         <div class="trow"><span>Output tokens</span><b id="tokOut">–</b></div>
         <div class="trow"><span>Total tokens</span><b id="tokAll">–</b></div>
         <div class="trow pk"><span>Peak generation</span><b><i class="pf">1,427 tok/s</i><i class="ps">–</i></b></div>
         <div class="spd">Time: from sending your list to the last gift in the cart. Tokens/sec: output tokens over that time, tool calls included. Peak: our best Speed Bounty run of this task on Cerebras, generation time only.</div>
       </div>
-      <div class="card"><h4>Cart</h4><div class="trow" style="margin:0"><span id="cartItems">0 items</span><b id="cartTot">$0.00</b></div></div>
+      <div class="card cartc"><h4>Cart</h4><div class="trow" style="margin:0"><span id="cartItems">0 items</span><b id="cartTot">$0.00</b></div></div>
     </aside>
   </section>
 
@@ -409,7 +447,7 @@ const giftCard = () => `<article class="g wait"><div class="for"></div><div clas
   <div class="ti"><div class="sk" style="height:12px;width:92%"></div><div class="sk" style="height:12px;width:60%;margin-top:6px"></div></div>
   <div class="pr"><div class="sk" style="height:18px;width:48%"></div></div><div class="so"></div><div class="btn"><span class="spin"></span>Searching…</div></article>`;
 let runMsg = null;
-function setRunStatus(html, cls = '') { const st = runMsg?.querySelector('.st'); if (st) { st.className = 'st ' + cls; st.innerHTML = html; } }
+function setRunStatus(html, cls = '') { const st = runMsg?.querySelector('.st'); if (st) { st.className = 'st ' + cls; st.innerHTML = html + (cls ? '' : '<span class="el"></span>'); } }
 function setCart() {
   const sum = money(cart.reduce((a, g) => a + amount(g.price), 0));
   $('cartN').textContent = cart.length; $('cartSum').textContent = sum;
@@ -440,7 +478,7 @@ function fill(g) {
 }
 
 // ---------- speed panel ----------
-function startWatch() { runT0 = performance.now(); const tick = () => { runSec = (performance.now() - runT0) / 1000; $('watch').textContent = fmt(runSec); runRaf = requestAnimationFrame(tick); }; tick(); }
+function startWatch() { runT0 = performance.now(); const tick = () => { runSec = (performance.now() - runT0) / 1000; $('watch').textContent = fmt(runSec); const el = runMsg?.querySelector('.st .el'); if (el) el.textContent = fmt(runSec); runRaf = requestAnimationFrame(tick); }; tick(); }
 function stopWatch(sec) { cancelAnimationFrame(runRaf); if (sec != null) runSec = sec; $('watch').textContent = fmt(runSec); }
 function setTokens(u, sec) {
   if (!u) { ['tps', 'tokOut', 'tokAll'].forEach(id => $(id).textContent = '–'); return; }
@@ -458,7 +496,7 @@ async function send(text, resent) {
   lastText = text; flipped = false; msgIn.value = '';
   addMsg(`<div class="bub">${resent ? '<span class="tag">↻ same list, resent</span>' : ''}${esc(text)}</div>`, 'm me');
   const side = provider;
-  runMsg = addMsg(`<div class="av">✨</div><div class="body"><div class="st"><span class="spin"></span>${CFG.model} on ${CFG.providers[side].label} is searching real stores…</div><div class="gifts">${Array.from({ length: CFG.slots }, giftCard).join('')}</div></div>`, 'm bot');
+  runMsg = addMsg(`<div class="av">✨</div><div class="body"><div class="st"><span class="spin"></span>${CFG.model} on ${CFG.providers[side].label} is searching real stores…<span class="el"></span></div><div class="gifts">${Array.from({ length: CFG.slots }, giftCard).join('')}</div></div>`, 'm bot');
   cards = [...runMsg.querySelectorAll('.g')];
   running = true; cart = []; setCart(); setTokens(null);
   ev('send:' + side);
@@ -596,11 +634,13 @@ window.__cursor = (x, y, click) => { const f = $('fc'); f.style.transform = `tra
 function fit() {
   const tb = document.body.classList.contains('clean') ? 0 : $('toolbar').offsetHeight;
   document.documentElement.style.setProperty('--tb', tb + 'px');
-  const W = innerWidth, H = innerHeight - tb, s = Math.min(W / 1280, H / 720);
-  cv.style.transform = `translate(${(W - 1280 * s) / 2}px, ${(H - 720 * s) / 2}px) scale(${s})`;
+  const [cw, ch] = TALL ? [720, 1280] : [1280, 720];
+  const W = innerWidth, H = innerHeight - tb, s = Math.min(W / cw, H / ch);
+  cv.style.transform = `translate(${(W - cw * s) / 2}px, ${(H - ch * s) / 2}px) scale(${s})`;
 }
 addEventListener('resize', fit);
 if (q.get('clean') === '1') document.body.classList.add('clean');
+const TALL = q.get('tall') === '1'; if (TALL) cv.classList.add('tall');
 cv.classList.add('prov-slow');
 greet(); setCart(); fit();
 </script>
