@@ -571,7 +571,10 @@ function setProvider(p) {
   flipped = true;
   greet(); addMsg(`Switched to ${CFG.model} on ${CFG.providers[p].label}`, 'sys sw');
   cart = []; setCart(); stopWatch(0); setTokens(null);
+  // the list you already sent goes straight to the new provider, so you don't type it again
+  clearTimeout(resendT); if (lastText) resendT = setTimeout(() => { if (!running && provider === p) send(lastText, true); }, 700);
 }
+let resendT = 0;
 const flipProvider = () => setProvider(provider === 'fast' ? 'slow' : 'fast');
 document.querySelectorAll('.opt').forEach(o => o.addEventListener('click', () => { if (o.dataset.p !== provider) setProvider(o.dataset.p); }));
 
